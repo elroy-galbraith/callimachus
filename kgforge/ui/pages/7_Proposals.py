@@ -21,6 +21,7 @@ from kgforge.engine.consolidator import (
     set_proposal_status,
     write_proposal_files,
 )
+from kgforge.engine.proposal_applier import apply_approved
 from kgforge.project import Project
 from kgforge.ui.helpers import api_key_warning, project_chip, require_project
 
@@ -39,15 +40,22 @@ st.caption(
     f"reviewing consolidation proposals in `{project.vault_dir.name}/proposals/`"
 )
 
-# ── Run consolidator on demand ───────────────────────────────────────────────
+# ── Actions ──────────────────────────────────────────────────────────────────
+
+# Count approved proposals so the "Apply" button's affordance reflects state.
+_approved_count = sum(
+    1 for p in list_proposal_files(project.vault_dir)
+    if (load_proposal_file(p) or {}).get("status") == "approved"
+)
 
 with st.container(border=True):
-    cols = st.columns([3, 1])
+    cols = st.columns([3, 1, 1])
     with cols[0]:
         st.markdown(
             "**Run the consolidator** to scan the vault and propose merges, "
             "regroupings, hierarchy links, and label rewrites. Existing "
-            "decisions (approved / rejected) are preserved on re-run."
+            "decisions are preserved on re-run. **Apply approved** mutates "
+            "the vault — the underlying entity files change."
         )
     with cols[1]:
         if st.button("🤖 Run consolidator", type="primary", width="stretch"):
@@ -67,6 +75,37 @@ with st.container(border=True):
                     status.update(label="Failed", state="error")
                     st.error(str(exc))
                     st.code(traceback.format_exc())
+    with cols[2]:
+        apply_label = (
+            f"✨ Apply {_approved_count} approved"
+            if _approved_count else "✨ Apply approved"
+        )
+        if st.button(
+            apply_label,
+            width="stretch",
+            disabled=(_approved_count == 0),
+            help=("Apply every proposal with status=approved. Mutates the vault. "
+                  "Idempotent: re-applying a proposal is a no-op."),
+        ):
+            with st.status(f"Applying {_approved_count} proposal(s)…",
+                           expanded=True) as status:
+                try:
+                    results = apply_approved(project.vault_dir, project.pack)
+                    n_ok = sum(1 for r in results if r.ok)
+                    for r in results:
+                        icon = "✅" if r.ok else "❌"
+                        st.write(f"{icon} `{r.operation}` · {r.message}")
+                        for t in r.touched:
+                            st.caption(f"   touched: {t}")
+                    status.update(
+                        label=f"Applied {n_ok}/{len(results)} proposal(s)",
+                        state="complete" if n_ok == len(results) else "error",
+                    )
+                except Exception as exc:
+                    status.update(label="Apply failed", state="error")
+                    st.error(str(exc))
+                    st.code(traceback.format_exc())
+            st.rerun()
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
@@ -275,12 +314,10 @@ st.write(
     f"{counts['deferred']} deferred"
 )
 
-if any(by_status[k] for k in ("approved", "rejected", "deferred")) and \
-   counts["approved"] > 0:
+if counts["approved"] > 0:
     st.success(
         f"{counts['approved']} approved proposal(s) ready to apply. "
-        "Run `python scripts/apply_proposals.py --project "
-        f"{project.name}` to write them to the vault."
+        "Use the **Apply approved** button at the top of the page."
     )
 
 for status_key in ("pending", "deferred", "approved", "rejected"):
