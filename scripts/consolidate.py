@@ -20,7 +20,10 @@ try:
 except ImportError:
     pass
 
-from kgforge.engine.consolidator import consolidate  # noqa: E402
+from kgforge.engine.consolidator import (  # noqa: E402
+    consolidate,
+    write_proposal_files,
+)
 from kgforge.project.project import load_project    # noqa: E402
 
 
@@ -29,11 +32,24 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--project", required=True)
     ap.add_argument("--model", default=None, help="override pack.models.ask")
     ap.add_argument("--json", action="store_true")
+    ap.add_argument(
+        "--write", action="store_true",
+        help="write proposals to <vault>/proposals/*.md so they're "
+             "reviewable in Obsidian and the Streamlit UI",
+    )
     args = ap.parse_args(argv)
 
     project = load_project(args.project)
     print(f"[consolidator] loading vault {project.vault_dir}", file=sys.stderr)
     proposals = consolidate(project.vault_dir, project.pack, model=args.model)
+
+    if args.write and proposals:
+        paths = write_proposal_files(
+            proposals, project.vault_dir,
+            model_snapshot=args.model or project.pack.models.ask,
+        )
+        print(f"[consolidator] wrote {len(paths)} proposal file(s) to "
+              f"{project.vault_dir / 'proposals'}", file=sys.stderr)
 
     if args.json:
         json.dump(

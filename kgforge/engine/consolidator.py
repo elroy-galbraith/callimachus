@@ -8,10 +8,13 @@ turns Proposals into commits.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 from dataclasses import asdict, dataclass
+from datetime import datetime, timezone
 from pathlib import Path
+from textwrap import dedent
 from typing import Any
 
 import anthropic
@@ -20,6 +23,9 @@ import yaml
 from kgforge.pack import DomainPack
 
 CONSOLIDATOR_MAX_TOKENS = 4096
+
+# Subdirectory inside the vault where proposal markdown files live.
+PROPOSALS_DIRNAME = "proposals"
 
 
 @dataclass
@@ -237,3 +243,190 @@ def _to_proposal(raw: dict) -> Proposal:
         evidence=raw.get("evidence", []),
         payload=payload,
     )
+
+
+# ── Markdown proposal files ───────────────────────────────────────────────────
+
+
+def proposal_fingerprint(p: Proposal) -> str:
+    """Stable 8-char hash over the operation + key payload fields.
+
+    Re-running the consolidator with similar output then yields the same
+    filename, so an existing user decision (`status: approved`) is
+    preserved instead of being shadowed by a fresh `status: pending` file.
+    """
+    op = p.operation
+    if op == "merge_entities":
+        key = (p.payload.get("kept_id"), p.payload.get("removed_id"))
+    elif op == "group_codes":
+        members = tuple(sorted(p.payload.get("member_code_ids") or []))
+        key = (p.payload.get("parent_theme_id"), members)
+    elif op == "link_hierarchy":
+        key = (p.payload.get("from_id"), p.payload.get("property"), p.payload.get("to_id"))
+    elif op == "rename_label":
+        key = (p.payload.get("entity_id"),)
+    else:
+        key = (json.dumps(p.payload, sort_keys=True),)
+    digest = hashlib.sha1(f"{op}|{key}".encode("utf-8")).hexdigest()
+    return digest[:8]
+
+
+def _proposal_slug(p: Proposal) -> str:
+    """Short human-readable slug for the filename."""
+    if p.operation == "merge_entities":
+        return f"merge_{p.payload.get('kept_id', 'x')}"
+    if p.operation == "group_codes":
+        return f"group_{_slugify(p.payload.get('new_subtheme_label', 'codes'))}"
+    if p.operation == "link_hierarchy":
+        return f"link_{p.payload.get('from_id', 'x')}"
+    if p.operation == "rename_label":
+        return f"rename_{p.payload.get('entity_id', 'x')}"
+    return p.operation
+
+
+def _slugify(s: str) -> str:
+    return re.sub(r"[^a-z0-9_]", "_", (s or "").lower())[:40].strip("_") or "x"
+
+
+def _wiki(entity_id: str | None) -> str:
+    return f"[[{entity_id}]]" if entity_id else "—"
+
+
+def _render_body(p: Proposal) -> str:
+    op = p.operation
+    pl = p.payload
+    if op == "merge_entities":
+        return dedent(f"""\
+            ## Merge two entities
+
+            **Keep:** {_wiki(pl.get('kept_id'))}
+            **Remove:** {_wiki(pl.get('removed_id'))}
+
+            Applying this proposal will rewrite every wikilink pointing to
+            `{pl.get('removed_id')}` so it points to `{pl.get('kept_id')}`,
+            then delete the file `{pl.get('removed_id')}.md`.
+            """)
+    if op == "group_codes":
+        members = pl.get("member_code_ids") or []
+        member_list = "\n".join(f"- {_wiki(m)}" for m in members)
+        return dedent(f"""\
+            ## Group codes under a new Subtheme
+
+            **New Subtheme:** `{pl.get('new_subtheme_label')}`
+            **Under Theme:** {_wiki(pl.get('parent_theme_id'))}
+
+            **Member codes:**
+            {member_list}
+
+            Applying this proposal will create a new Subtheme markdown file
+            and add `hasSubtheme: [[new-subtheme]]` to the parent Theme.
+            """)
+    if op == "link_hierarchy":
+        return dedent(f"""\
+            ## Add a hierarchy link
+
+            Add property `{pl.get('property')}` on {_wiki(pl.get('from_id'))}
+            pointing to {_wiki(pl.get('to_id'))}.
+            """)
+    if op == "rename_label":
+        return dedent(f"""\
+            ## Rename an entity's label
+
+            **Entity:** {_wiki(pl.get('entity_id'))}
+            **New label:** `{pl.get('new_label')}`
+            """)
+    return f"## {op}\n\nUnknown operation type."
+
+
+def write_proposal_files(
+    proposals: list[Proposal],
+    vault_dir: Path,
+    *,
+    model_snapshot: str,
+) -> list[Path]:
+    """Write each proposal to <vault>/proposals/<id>.md.
+
+    If a file with the same fingerprint already exists, its `status:` and
+    any reviewer-added notes are preserved; only the LLM-generated fields
+    (rationale, evidence, confidence) are refreshed. That way a re-run
+    doesn't clobber existing decisions.
+    """
+    out_dir = vault_dir / PROPOSALS_DIRNAME
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    written: list[Path] = []
+    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+    for idx, p in enumerate(proposals, 1):
+        fp = proposal_fingerprint(p)
+        slug = _proposal_slug(p)
+        filename = f"proposal_{fp}_{slug}.md"
+        path = out_dir / filename
+
+        existing_status = "pending"
+        existing_notes = ""
+        if path.exists():
+            try:
+                existing = _parse_frontmatter(path) or {}
+                existing_status = existing.get("status", "pending")
+                existing_notes = existing.get("reviewer_notes", "") or ""
+            except Exception:
+                pass
+
+        meta: dict[str, Any] = {
+            "proposal_id":    f"proposal_{fp}",
+            "operation":      p.operation,
+            "status":         existing_status,
+            "confidence":     p.confidence,
+            "created_at":     now,
+            "model_snapshot": model_snapshot,
+        }
+        # Operation-specific payload fields flatten into top-level frontmatter
+        # so the UI can read them without recursing into a nested dict.
+        for k, v in p.payload.items():
+            if v is None:
+                continue
+            meta[k] = v
+        meta["rationale"] = p.rationale
+        meta["evidence"]  = p.evidence
+        if existing_notes:
+            meta["reviewer_notes"] = existing_notes
+
+        frontmatter = yaml.dump(meta, allow_unicode=True, default_flow_style=False, sort_keys=False)
+        body = _render_body(p)
+        path.write_text(f"---\n{frontmatter}---\n\n{body}\n", encoding="utf-8")
+        written.append(path)
+
+    return written
+
+
+def list_proposal_files(vault_dir: Path) -> list[Path]:
+    """Return all proposal markdown files for the vault."""
+    out_dir = vault_dir / PROPOSALS_DIRNAME
+    if not out_dir.exists():
+        return []
+    return sorted(out_dir.glob("proposal_*.md"))
+
+
+def load_proposal_file(path: Path) -> dict | None:
+    return _parse_frontmatter(path)
+
+
+def set_proposal_status(path: Path, status: str, *, reviewer_notes: str | None = None) -> None:
+    """Update the `status` (and optionally `reviewer_notes`) on a proposal file.
+
+    Preserves the body and all other frontmatter fields.
+    """
+    if status not in {"pending", "approved", "rejected", "deferred", "applied"}:
+        raise ValueError(f"unknown proposal status: {status!r}")
+    text = path.read_text(encoding="utf-8")
+    m = re.match(r"^---\n(.*?)\n---\n(.*)$", text, re.DOTALL)
+    if not m:
+        raise ValueError(f"no frontmatter in {path}")
+    meta = yaml.safe_load(m.group(1)) or {}
+    meta["status"] = status
+    if reviewer_notes is not None:
+        meta["reviewer_notes"] = reviewer_notes
+    body = m.group(2)
+    frontmatter = yaml.dump(meta, allow_unicode=True, default_flow_style=False, sort_keys=False)
+    path.write_text(f"---\n{frontmatter}---\n{body}", encoding="utf-8")
