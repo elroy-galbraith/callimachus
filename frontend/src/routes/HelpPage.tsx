@@ -69,7 +69,7 @@ export function HelpPage() {
           <Accordion.Panel>
             <Text>
               See the{" "}
-              <Anchor href="https://github.com" target="_blank" rel="noreferrer">
+              <Anchor href="<YOUR_PROJECT_REPOSITORY_URL>" target="_blank" rel="noreferrer">
                 project repository
               </Anchor>{" "}
               for the engine code, packs, and CLI scripts.
