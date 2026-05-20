@@ -27,6 +27,13 @@ secrets/
 *.p12
 *.pfx
 
+# Frontend (frontend/ has its own .gitignore for codegen; this catches
+# anything created from the worktree root before the cwd is set).
+node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/src/api/generated.ts
+
 # OS
 .DS_Store
 Thumbs.db
