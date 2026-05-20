@@ -48,6 +48,52 @@ python scripts/ask.py "What does the DPA 2020 say about biometric data?" --show-
 
 ---
 
+## Web UI (React + FastAPI)
+
+For interactive use there's a React + FastAPI app under
+[kgforge/api/](kgforge/api/) and [frontend/](frontend/). The CLI flow
+above stays canonical for scripting and demos; the web app is the
+day-to-day interface.
+
+**Backend** (FastAPI wrapping `kgforge.engine` + `kgforge.project`):
+
+```powershell
+pip install -e .[api]
+uvicorn kgforge.api.main:app --reload --port 8000
+# → OpenAPI spec at http://localhost:8000/openapi.json
+# → API root   at http://localhost:8000/api/projects
+```
+
+**Frontend** (Vite + React + TypeScript + Mantine):
+
+```powershell
+cd frontend
+npm install
+npm run dev          # vite at :5173, proxies /api/* to :8000
+# or, with both at once (from the frontend dir):
+npm run dev:all
+```
+
+The Vite dev server proxies `/api/*` to the FastAPI process, so the
+browser sees same-origin and no CORS dance is needed.
+
+Seven pages have full parity with the original Streamlit app: **Projects**,
+**Dashboard**, **Schema**, **Query**, **Proposals**, **Settings**, and
+**Help**. Long-running operations (PDF extraction, NL ask, consolidator,
+apply-approved) run as background jobs and stream progress events via
+Server-Sent Events.
+
+```powershell
+# Run the smoke tests
+pytest tests/api -q
+```
+
+The original Streamlit UI is archived under [legacy-streamlit/](legacy-streamlit/);
+see [legacy-streamlit/README.md](legacy-streamlit/README.md) for how to run
+it as a reference / fallback.
+
+---
+
 ## Architecture
 
 ```mermaid
@@ -241,7 +287,7 @@ Statute, single-shot Haiku extractor, minimal git-PR curator loop, Oxigraph
 SPARQL, NL → SPARQL QA agent (Sonnet), CLI-only.
 
 **Deliberately deferred:** Cybercrimes Act 2015, BOJ circulars, SHACL shapes,
-OWL 2 RL reasoning, Sonnet escalation, gold-standard annotation, web UI.
+OWL 2 RL reasoning, Sonnet escalation, gold-standard annotation.
 
 ---
 

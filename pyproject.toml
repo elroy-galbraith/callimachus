@@ -31,13 +31,22 @@ curator = [
 ]
 # Layout-aware PDF text extraction (heavy; pulls PyTorch).
 docling = ["docling>=2.0.0"]
-# Streamlit UI (Phase C).
-ui = ["streamlit>=1.30.0"]
+# FastAPI HTTP layer (kgforge.api.*). Consumed by the React frontend.
+api = [
+  "fastapi>=0.110.0",
+  "uvicorn[standard]>=0.27.0",
+  "python-multipart>=0.0.9",
+  "httpx>=0.27.0",  # required by fastapi.testclient
+]
+# Legacy Streamlit UI — superseded by the React frontend (kgforge.api +
+# frontend/). Kept runnable at ``legacy-streamlit/kgforge_ui/`` for reference.
+legacy = ["streamlit>=1.30.0"]
 # Convenience: everything.
 all = [
   "kgforge[curator]",
   "kgforge[docling]",
-  "kgforge[ui]",
+  "kgforge[api]",
+  "kgforge[legacy]",
 ]
 dev = ["pytest>=7", "ruff>=0.4"]
 

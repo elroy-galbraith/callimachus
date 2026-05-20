@@ -18,6 +18,10 @@ vault.ttl
 # Inbox PDFs — processing payloads; keep history clean
 inbox/*.pdf
 
+# Approval-backend audit log (FilesystemBackend, kgforge.approval.filesystem)
+audit.sqlite
+**/audit.sqlite
+
 # Environment / secrets — never commit credentials
 .env
 *.env
@@ -26,6 +30,13 @@ secrets/
 *.pem
 *.p12
 *.pfx
+
+# Frontend (frontend/ has its own .gitignore for codegen; this catches
+# anything created from the worktree root before the cwd is set).
+node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/src/api/generated.ts
 
 # OS
 .DS_Store

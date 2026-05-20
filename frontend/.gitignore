@@ -1,0 +1,17 @@
+node_modules/
+dist/
+.vite/
+
+# tsc -b incremental build artefacts
+*.tsbuildinfo
+
+# Emitted JS / d.ts from accidental `tsc` runs (we only use Vite to build)
+vite.config.js
+vite.config.d.ts
+
+# Codegen output — regenerate with `npm run gen:api`.
+src/api/generated.ts
+
+# Editor scratch
+*.log
+.eslintcache

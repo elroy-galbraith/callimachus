@@ -1,13 +1,27 @@
-"""kgforge — Streamlit landing page.
+"""kgforge — Streamlit landing page (legacy).
+
+Superseded by the React + FastAPI frontend at ../frontend/. This page is
+kept runnable for reference and as a fallback during the cutover.
 
 Run with:
-    streamlit run kgforge/ui/app.py
+    streamlit run legacy-streamlit/kgforge_ui/app.py
 """
 from __future__ import annotations
 
+# Bootstrap: put ``legacy-streamlit/`` on sys.path so
+# ``from kgforge_ui.helpers import ...`` resolves whether Streamlit
+# launched this file directly or via a deep-link to a /pages/ subpage.
+import sys as _sys
+from pathlib import Path as _Path
+for _p in _Path(__file__).resolve().parents:
+    if _p.name == "legacy-streamlit":
+        if str(_p) not in _sys.path:
+            _sys.path.insert(0, str(_p))
+        break
+
 import streamlit as st
 
-from kgforge.ui.helpers import api_key_warning, get_active_project, project_chip
+from kgforge_ui.helpers import api_key_warning, get_active_project, project_chip
 
 st.set_page_config(
     page_title="kgforge",

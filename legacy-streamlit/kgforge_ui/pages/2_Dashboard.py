@@ -15,7 +15,17 @@ import yaml
 from kgforge.engine import curator as curator_engine
 from kgforge.engine import chunker as chunker_engine
 from kgforge.project import Project
-from kgforge.ui.helpers import api_key_warning, project_chip, require_project
+# Bootstrap: ensure ``kgforge_ui`` resolves when Streamlit deep-links
+# directly to this page without running app.py first.
+import sys as _sys
+from pathlib import Path as _Path
+for _p in _Path(__file__).resolve().parents:
+    if _p.name == "legacy-streamlit":
+        if str(_p) not in _sys.path:
+            _sys.path.insert(0, str(_p))
+        break
+
+from kgforge_ui.helpers import api_key_warning, project_chip, require_project
 
 # Text-like extensions we can cheaply preview-chunk in the UI without
 # running the full PDF extraction pipeline.
