@@ -14,6 +14,14 @@ from kgforge.api.jobs import JobRegistry
 from kgforge.project import Project, load_project
 
 
+# Project names must look like snake_case identifiers (same constraint
+# ProjectCreateIn enforces on create). The pattern doubles as path-
+# traversal defence: without it, a request like
+# ``GET /api/projects/..%2F..%2Ffoo`` would let ``load_project`` resolve
+# outside the projects directory.
+_PROJECT_NAME_PATTERN = r"^[a-z][a-z0-9_]*$"
+
+
 @lru_cache(maxsize=32)
 def _load_cached(name: str) -> Project:
     return load_project(name)
@@ -24,7 +32,13 @@ def clear_project_cache() -> None:
     _load_cached.cache_clear()
 
 
-def get_project(name: str = Path(..., description="Project name")) -> Project:
+def get_project(
+    name: str = Path(
+        ...,
+        pattern=_PROJECT_NAME_PATTERN,
+        description="Project name (snake_case)",
+    ),
+) -> Project:
     try:
         return _load_cached(name)
     except FileNotFoundError as e:

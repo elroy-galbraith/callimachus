@@ -9,7 +9,7 @@ from __future__ import annotations
 from dataclasses import asdict
 from pathlib import Path
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Path
 
 from kgforge.api.deps import get_jobs, get_project
 from kgforge.api.jobs import JobRegistry, JobState
@@ -38,6 +38,12 @@ from kgforge.engine.proposal_applier import apply_approved
 from kgforge.project import Project
 
 router = APIRouter(tags=["proposals"])
+
+# ``consolidator.proposal_fingerprint`` uses the first 8 hex chars of a
+# SHA-1, so every proposal id has this exact shape. Validating at the
+# route boundary blocks glob-injection through ``find_proposal_file``
+# (which interpolates the id into ``glob(f"{proposal_id}_*.md")``).
+_PROPOSAL_ID_PATTERN = r"^proposal_[0-9a-f]{8}$"
 
 # Operation-specific payload keys, mirrored from
 # consolidator._to_proposal. The proposal markdown files store these as
@@ -99,8 +105,8 @@ def list_proposals(project: Project = Depends(get_project)) -> ProposalListOut:
     response_model=ProposalOut,
 )
 def patch_proposal(
-    proposal_id: str,
     body: ProposalStatusIn,
+    proposal_id: str = Path(..., pattern=_PROPOSAL_ID_PATTERN),
     project: Project = Depends(get_project),
 ) -> ProposalOut:
     """Set ``status`` and optionally ``reviewer_notes`` on a proposal.

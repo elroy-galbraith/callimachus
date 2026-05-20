@@ -192,11 +192,31 @@ def test_patch_proposal_status(client: TestClient, isolated_project) -> None:
 
 
 def test_patch_proposal_unknown_404(client: TestClient) -> None:
+    # Valid id format (8 hex chars) but no such file → 404.
+    r = client.patch(
+        "/api/projects/test_proposals/proposals/proposal_cafebabe",
+        json={"status": "approved"},
+    )
+    assert r.status_code == 404
+
+
+def test_patch_proposal_malformed_id_422(client: TestClient) -> None:
+    # The proposal_id path-param regex rejects glob-style ids before
+    # the route runs.
     r = client.patch(
         "/api/projects/test_proposals/proposals/proposal_nope",
         json={"status": "approved"},
     )
-    assert r.status_code == 404
+    assert r.status_code == 422
+
+
+def test_get_project_rejects_non_snake_case_name(client: TestClient) -> None:
+    # The {name} path-param regex blocks anything that isn't snake_case
+    # (defence-in-depth against path traversal — capital letters or dots
+    # in the URL would otherwise reach ``load_project``).
+    for bad in ("Compliance", "compliance.bak", "compli-ance"):
+        r = client.get(f"/api/projects/{bad}")
+        assert r.status_code == 422, (bad, r.status_code)
 
 
 def test_patch_proposal_bad_status_400(client: TestClient, isolated_project) -> None:
@@ -204,7 +224,7 @@ def test_patch_proposal_bad_status_400(client: TestClient, isolated_project) -> 
     proposals_dir = isolated_project.vault_dir / "proposals"
     proposals_dir.mkdir(parents=True, exist_ok=True)
     fm = yaml.dump({
-        "proposal_id": "proposal_aaaa",
+        "proposal_id": "proposal_aaaaaaaa",
         "operation": "rename_label",
         "status": "pending",
         "confidence": "low",
@@ -213,9 +233,9 @@ def test_patch_proposal_bad_status_400(client: TestClient, isolated_project) -> 
         "rationale": "",
         "evidence": [],
     }, sort_keys=False)
-    (proposals_dir / "proposal_aaaa_rename_x.md").write_text(f"---\n{fm}---\n\nbody\n")
+    (proposals_dir / "proposal_aaaaaaaa_rename_x.md").write_text(f"---\n{fm}---\n\nbody\n")
     r = client.patch(
-        "/api/projects/test_proposals/proposals/proposal_aaaa",
+        "/api/projects/test_proposals/proposals/proposal_aaaaaaaa",
         json={"status": "not_a_real_status"},
     )
     assert r.status_code == 422

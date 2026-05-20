@@ -169,13 +169,17 @@ export function useJobPolling(
   jobId: string | null | undefined,
   intervalMs = 1000,
 ): void {
+  // ``job`` itself is a fresh object every render, so depending on it
+  // would re-arm the timeout on every parent re-render. Narrow to the
+  // bits we actually read: the status and the (stable) refetch fn.
+  const status = job.data?.status;
+  const { refetch } = job;
   useEffect(() => {
-    if (!jobId || !job.data) return;
-    const status = job.data.status;
+    if (!jobId || !status) return;
     if (status === "done" || status === "error") return;
-    const t = setTimeout(() => job.refetch(), intervalMs);
+    const t = setTimeout(() => refetch(), intervalMs);
     return () => clearTimeout(t);
-  }, [jobId, job, intervalMs]);
+  }, [jobId, status, refetch, intervalMs]);
 }
 
 // ---------- Inbox -----------------------------------------------------------
