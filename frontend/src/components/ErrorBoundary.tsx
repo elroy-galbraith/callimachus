@@ -45,7 +45,7 @@ export class ErrorBoundary extends Component<Props, State> {
       <Alert color="red" variant="light" title={`${label} failed to render`}>
         <Stack gap={6}>
           <Text size="xs" ff="monospace">
-            {error.message}
+            {error.message || String(error)}
           </Text>
           <Button size="compact-xs" variant="subtle" color="red" onClick={this.reset}>
             Retry
