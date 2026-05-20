@@ -40,6 +40,7 @@ import {
   usePatchProposal,
   useProposals,
 } from "../api/hooks";
+import { ErrorBoundary } from "../components/ErrorBoundary";
 import { JobProgressDrawer } from "../components/JobProgressDrawer";
 import { ProposalMiniGraph } from "../components/ProposalMiniGraph";
 import { useActiveProject } from "../state/useActiveProject";
@@ -210,21 +211,23 @@ export function ProposalsPage() {
       )}
 
       {data && data.proposals.length > 0 && (
-        <Stack>
-          <CountsBar counts={data.counts} />
-          {STATUS_ORDER.map((status) => {
-            const bucket = data.proposals.filter((p) => p.status === status);
-            if (bucket.length === 0) return null;
-            return (
-              <ProposalsBucket
-                key={status}
-                status={status}
-                proposals={bucket}
-                projectName={projectName ?? ""}
-              />
-            );
-          })}
-        </Stack>
+        <ErrorBoundary label="proposals list">
+          <Stack>
+            <CountsBar counts={data.counts} />
+            {STATUS_ORDER.map((status) => {
+              const bucket = data.proposals.filter((p) => p.status === status);
+              if (bucket.length === 0) return null;
+              return (
+                <ProposalsBucket
+                  key={status}
+                  status={status}
+                  proposals={bucket}
+                  projectName={projectName ?? ""}
+                />
+              );
+            })}
+          </Stack>
+        </ErrorBoundary>
       )}
 
       <JobProgressDrawer
@@ -373,14 +376,21 @@ function ProposalCard({
       </Group>
 
       <Collapse in={opened}>
+        <ErrorBoundary label="proposal card">
         <Stack mt="sm">
           <div className="payload-summary" style={{ fontSize: 14 }}>
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-              {proposal.payload_summary}
-            </ReactMarkdown>
+            <ErrorBoundary label="markdown summary">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {proposal.payload_summary}
+              </ReactMarkdown>
+            </ErrorBoundary>
           </div>
 
-          {proposal.dot && <ProposalMiniGraph dot={proposal.dot} />}
+          {proposal.dot && (
+            <ErrorBoundary label="mini graph">
+              <ProposalMiniGraph dot={proposal.dot} />
+            </ErrorBoundary>
+          )}
 
           <Stack gap={4}>
             <Text size="xs" c="dimmed" tt="uppercase" fw={600}>
@@ -459,6 +469,7 @@ function ProposalCard({
             )}
           </Group>
         </Stack>
+        </ErrorBoundary>
       </Collapse>
     </Card>
   );
