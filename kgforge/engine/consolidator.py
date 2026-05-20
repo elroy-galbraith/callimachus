@@ -22,7 +22,10 @@ import yaml
 
 from kgforge.pack import DomainPack
 
-CONSOLIDATOR_MAX_TOKENS = 4096
+# Output budget for the propose_consolidation tool call. Vaults with many
+# entities can warrant 50+ proposals; each is ~150-300 output tokens so
+# 16K is a safe headroom (still well under Sonnet 4.6's 64K cap).
+CONSOLIDATOR_MAX_TOKENS = 16384
 
 # Subdirectory inside the vault where proposal markdown files live.
 PROPOSALS_DIRNAME = "proposals"
@@ -220,7 +223,18 @@ def consolidate(
     for block in response.content:
         if block.type != "tool_use":
             continue
-        for raw in block.input.get("proposals", []):
+        raw_proposals = block.input.get("proposals", [])
+        if not raw_proposals and response.stop_reason == "max_tokens":
+            import sys
+            print(
+                f"[consolidator] WARNING: tool call truncated at "
+                f"max_tokens={CONSOLIDATOR_MAX_TOKENS} "
+                f"(stop_reason=max_tokens, output_tokens="
+                f"{response.usage.output_tokens}). Raise "
+                f"CONSOLIDATOR_MAX_TOKENS or split the vault.",
+                file=sys.stderr,
+            )
+        for raw in raw_proposals:
             proposals.append(_to_proposal(raw))
     return proposals
 

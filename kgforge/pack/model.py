@@ -71,6 +71,12 @@ class PromptSpec(BaseModel):
     user: str
     few_shot: str = ""
     text_window_chars: int = 8000
+    # Cap on tool-call output tokens per chunk. The model emits structured
+    # entity JSON via tool use, and exhausting this budget mid-emission
+    # produces an empty tool_use input (a hard zero-entities failure, not a
+    # partial result). Rule of thumb: ~1 output token per 2 input chars,
+    # so leave roughly text_window_chars/2 tokens of headroom.
+    max_output_tokens: int = 4096
 
 
 class CompetencyQuestion(BaseModel):

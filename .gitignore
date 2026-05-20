@@ -54,3 +54,13 @@ held-out/
 baselines/
 baselines_pre/
 baselines_post/
+
+# Approval-backend state — per-machine runtime sqlite, not portable
+**/audit.sqlite
+
+# Obsidian local UI state — per-user, noisy diffs, regenerated on first open
+.obsidian/
+**/.obsidian/
+
+# Python bytecode in per-project pack copies
+projects/**/__pycache__/

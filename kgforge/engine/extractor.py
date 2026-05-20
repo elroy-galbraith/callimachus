@@ -39,7 +39,7 @@ def call_llm(
 
     response = client.messages.create(
         model=pack.models.extractor,
-        max_tokens=4096,
+        max_tokens=pack.prompt.max_output_tokens,
         system=system,
         tools=[
             {
@@ -54,7 +54,18 @@ def call_llm(
 
     for block in response.content:
         if block.type == "tool_use":
-            return block.input.get("entities", [])
+            entities = block.input.get("entities", [])
+            if not entities and response.stop_reason == "max_tokens":
+                print(
+                    f"[extractor] WARNING: tool call truncated at "
+                    f"max_tokens={pack.prompt.max_output_tokens} "
+                    f"(stop_reason=max_tokens, output_tokens="
+                    f"{response.usage.output_tokens}). Lower "
+                    f"text_window_chars or raise max_output_tokens "
+                    f"in pack.yaml.",
+                    file=sys.stderr,
+                )
+            return entities
     return []
 
 
