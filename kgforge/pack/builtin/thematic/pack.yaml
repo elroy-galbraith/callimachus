@@ -35,7 +35,11 @@ properties:
 
 prompt:
   version: thematic-v1
-  text_window_chars: 8000
+  # Inputs over this size are auto-chunked at natural boundaries
+  # (speaker turns, paragraphs) by kgforge.engine.chunker. 20K chars
+  # is roughly 15 minutes of interview transcript per chunk - comfortably
+  # below the Haiku quality cliff while keeping chunk count manageable.
+  text_window_chars: 20000
   few_shot: |
     EXAMPLE INPUT (excerpt from an interview transcript):
     P03 [00:14:22]: "I just felt completely shut out — like nobody was telling me

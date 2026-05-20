@@ -13,8 +13,13 @@ import streamlit as st
 import yaml
 
 from kgforge.engine import curator as curator_engine
+from kgforge.engine import chunker as chunker_engine
 from kgforge.project import Project
 from kgforge.ui.helpers import api_key_warning, project_chip, require_project
+
+# Text-like extensions we can cheaply preview-chunk in the UI without
+# running the full PDF extraction pipeline.
+_TEXT_LIKE = {".txt", ".md", ".vtt"}
 
 # ── helpers (defined first so the page-flow code below can call them) ────────
 
@@ -117,14 +122,41 @@ inbox_files = (
     else []
 )
 
+def _chunk_preview(path: Path, max_chars: int) -> str:
+    """Render a one-line chunking estimate for a single file.
+
+    Text-like files are read and char-counted exactly. PDFs are sized
+    by bytes only - actual chunking happens after PDF→text extraction.
+    """
+    size_kb = path.stat().st_size / 1024
+    if path.suffix.lower() in _TEXT_LIKE:
+        try:
+            text = path.read_text(encoding="utf-8", errors="ignore")
+        except OSError:
+            return f"`{path.name}` ({size_kb:,.1f} KB)"
+        n_chars = len(text)
+        if n_chars <= max_chars:
+            return f"`{path.name}` ({n_chars:,} chars)"
+        n_chunks = chunker_engine.estimate_chunks(text, max_chars)
+        return (
+            f"`{path.name}` ({n_chars:,} chars) - "
+            f"will split into ~**{n_chunks}** chunks at natural boundaries"
+        )
+    return f"`{path.name}` ({size_kb:,.1f} KB) - PDF, chunked after text extraction if needed"
+
+
 if not inbox_files:
     st.info(f"No files in `{project.inbox_dir.name}/`. Drop a document above to get started.")
 else:
+    max_chars = project.pack.prompt.text_window_chars
     cols = st.columns([3, 1, 1])
     with cols[0]:
         for f in inbox_files:
-            size_kb = f.stat().st_size / 1024
-            st.markdown(f"- `{f.name}` ({size_kb:,.1f} KB)")
+            st.markdown(f"- {_chunk_preview(f, max_chars)}")
+        st.caption(
+            f"Chunk window: **{max_chars:,} chars** "
+            f"(set in `pack.yaml` → `prompt.text_window_chars`)"
+        )
     with cols[1]:
         run_clicked = st.button(
             "⚙ Process all", type="primary", width="stretch",
