@@ -55,7 +55,11 @@ class NLQueryIn(BaseModel):
     question: str
     model: str | None = Field(
         None,
-        description="Anthropic model id; defaults to pack.models.ask",
+        description=(
+            "LiteLLM model id (e.g. anthropic/claude-sonnet-4-6, "
+            "openai/gpt-4o, gemini/gemini-2.5-pro); defaults to "
+            "pack.models.ask."
+        ),
     )
 
 

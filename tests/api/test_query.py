@@ -1,8 +1,8 @@
 """Query router smoke tests.
 
 The sync endpoints (sparql, run-cq, rebuild-ttl) hit real engine code
-against the shipped vault. The NL-ask job patches ``anthropic.Anthropic``
-and the three pipeline calls so we never reach out to the real API — the
+against the shipped vault. The NL-ask job patches the three pipeline
+calls so we never reach out to the real LLM provider — the
 test exercises the JobRegistry contract and the orchestrator's progress
 events, not the LLM.
 """
@@ -88,9 +88,9 @@ def test_nl_ask_without_api_key(client: TestClient, monkeypatch) -> None:
 def test_nl_ask_job_orchestration(client: TestClient, monkeypatch) -> None:
     """The job should kick, stream stage events, and land NLAnswerOut.
 
-    We patch the three engine calls + the Anthropic constructor so the
-    test runs offline. The orchestrator's contract (which events fire and
-    what the terminal result looks like) is what we're locking in.
+    We patch the three engine calls so the test runs offline — the
+    orchestrator's contract (which events fire and what the terminal
+    result looks like) is what we're locking in.
     """
     monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
 
@@ -100,8 +100,7 @@ def test_nl_ask_job_orchestration(client: TestClient, monkeypatch) -> None:
         "rows": [{"s": "<urn:fake>"}],
     }
 
-    with patch("anthropic.Anthropic") as fake_client, \
-         patch(
+    with patch(
              "callimachus.api.routers.query.ask_engine.synthesize_sparql",
              return_value=("SELECT * WHERE { ?s ?p ?o }", "test rationale"),
          ), \
@@ -113,8 +112,6 @@ def test_nl_ask_job_orchestration(client: TestClient, monkeypatch) -> None:
              "callimachus.api.routers.query.ask_engine.summarise",
              return_value="**Test answer** with [citation](vault/x.md).",
          ):
-        fake_client.return_value = object()
-
         r = client.post(
             "/api/projects/compliance/query/ask",
             json={"question": "smoke?", "model": "test-model"},

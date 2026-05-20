@@ -10,6 +10,25 @@ from callimachus.pack import DomainPack
 from callimachus.project import Project
 
 
+class ModelsUpdateIn(BaseModel):
+    """Partial update for the per-project model selections.
+
+    Either field may be omitted to leave it unchanged. Strings should be
+    LiteLLM model ids (``provider/model``); bare names are auto-prefixed
+    by ``callimachus.engine.llm.normalise_model_id`` at call time, so
+    legacy ``claude-*`` values continue to work.
+    """
+
+    extractor: str | None = Field(
+        None, min_length=1, max_length=200,
+        description="Model id for the extractor role (e.g. anthropic/claude-haiku-4-5-20251001).",
+    )
+    ask: str | None = Field(
+        None, min_length=1, max_length=200,
+        description="Model id for the ask/consolidator role (e.g. anthropic/claude-sonnet-4-6).",
+    )
+
+
 class ProjectSummary(BaseModel):
     """Cheap view used by the project list — no pack details."""
 

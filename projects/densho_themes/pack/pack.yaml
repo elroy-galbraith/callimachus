@@ -103,8 +103,10 @@ hooks:
   module: hooks.py
 
 models:
-  extractor: claude-haiku-4-5-20251001
-  ask:       claude-sonnet-4-6
+  # LiteLLM model ids. Swap the provider prefix to use a different vendor:
+  #   openai/gpt-4o, gemini/gemini-2.5-pro, mistral/mistral-large-latest, …
+  extractor: anthropic/claude-haiku-4-5-20251001
+  ask:       anthropic/claude-sonnet-4-6
 
 inbox:
   accepted_extensions: [".pdf", ".txt", ".md", ".vtt"]
