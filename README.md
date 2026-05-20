@@ -88,10 +88,9 @@ Server-Sent Events.
 pytest tests/api -q
 ```
 
-The original Streamlit UI at [kgforge/ui/](kgforge/ui/) is still runnable
-with `streamlit run kgforge/ui/app.py`. It will be archived to
-`legacy-streamlit/` in a follow-up commit once we're confident the React
-frontend covers every demo path.
+The original Streamlit UI is archived under [legacy-streamlit/](legacy-streamlit/);
+see [legacy-streamlit/README.md](legacy-streamlit/README.md) for how to run
+it as a reference / fallback.
 
 ---
 

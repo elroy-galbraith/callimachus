@@ -8,7 +8,17 @@ import streamlit as st
 from kgforge.engine import ask as ask_engine
 from kgforge.engine import store as store_engine
 from kgforge.engine import to_turtle as to_turtle_engine
-from kgforge.ui.helpers import api_key_warning, project_chip, require_project
+# Bootstrap: ensure ``kgforge_ui`` resolves when Streamlit deep-links
+# directly to this page without running app.py first.
+import sys as _sys
+from pathlib import Path as _Path
+for _p in _Path(__file__).resolve().parents:
+    if _p.name == "legacy-streamlit":
+        if str(_p) not in _sys.path:
+            _sys.path.insert(0, str(_p))
+        break
+
+from kgforge_ui.helpers import api_key_warning, project_chip, require_project
 
 st.set_page_config(page_title="Query · kgforge", layout="wide")
 project_chip()

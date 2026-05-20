@@ -8,7 +8,17 @@ from __future__ import annotations
 
 import streamlit as st
 
-from kgforge.ui.helpers import get_active_project, project_chip
+# Bootstrap: ensure ``kgforge_ui`` resolves when Streamlit deep-links
+# directly to this page without running app.py first.
+import sys as _sys
+from pathlib import Path as _Path
+for _p in _Path(__file__).resolve().parents:
+    if _p.name == "legacy-streamlit":
+        if str(_p) not in _sys.path:
+            _sys.path.insert(0, str(_p))
+        break
+
+from kgforge_ui.helpers import get_active_project, project_chip
 
 st.set_page_config(page_title="Help · kgforge", layout="wide")
 project_chip()
