@@ -1,8 +1,9 @@
 # Legacy Streamlit UI
 
-This is the original Streamlit app that shipped with the kgforge prototype.
+This is the original Streamlit app that shipped with the Callimachus prototype
+(back when it was called `kgforge`).
 It has been **superseded by the React + FastAPI frontend** under `../frontend/`
-and `../kgforge/api/`.
+and `../callimachus/api/`.
 
 The Streamlit code is kept here for reference and as a fallback during the
 cutover. It is not actively maintained — any new feature work lands in the
@@ -14,10 +15,10 @@ From the repo root:
 
 ```powershell
 pip install -e .[legacy]
-streamlit run legacy-streamlit/kgforge_ui/app.py
+streamlit run legacy-streamlit/callimachus_ui/app.py
 ```
 
-The app auto-discovers the seven pages under `kgforge_ui/pages/`. The active
+The app auto-discovers the seven pages under `callimachus_ui/pages/`. The active
 project is tracked in Streamlit session state and lasts as long as the browser
 tab.
 
@@ -25,7 +26,7 @@ tab.
 
 ```
 legacy-streamlit/
-└── kgforge_ui/
+└── callimachus_ui/
     ├── app.py                  # landing page + active-project picker
     ├── helpers.py              # session-state helpers, sys.path bootstrap
     └── pages/

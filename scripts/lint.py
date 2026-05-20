@@ -15,8 +15,8 @@ import argparse
 import json
 import sys
 
-from kgforge.engine.linter import lint_vault, summarise
-from kgforge.project.project import load_project
+from callimachus.engine.linter import lint_vault, summarise
+from callimachus.project.project import load_project
 
 SEV_TAG = {"error": "ERR ", "warn": "WARN", "info": "INFO"}
 

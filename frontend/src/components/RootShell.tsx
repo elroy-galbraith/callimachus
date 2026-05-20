@@ -33,7 +33,7 @@ export function RootShell() {
               hiddenFrom="sm"
               size="sm"
             />
-            <Title order={4}>kgforge</Title>
+            <Title order={4}>Callimachus</Title>
           </Group>
         </Group>
       </AppShell.Header>

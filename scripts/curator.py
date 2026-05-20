@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""curator.py — CLI shim around kgforge.engine.curator.
+"""curator.py — CLI shim around callimachus.engine.curator.
 
 Watch the inbox for new PDFs; run extraction; submit to the project's
 ApprovalBackend (git for the existing compliance project, filesystem for
@@ -26,9 +26,9 @@ try:
 except ImportError:
     pass
 
-from kgforge.approval import make_backend   # noqa: E402
-from kgforge.engine import curator as engine  # noqa: E402
-from kgforge.pack import load_builtin       # noqa: E402
+from callimachus.approval import make_backend   # noqa: E402
+from callimachus.engine import curator as engine  # noqa: E402
+from callimachus.pack import load_builtin       # noqa: E402
 
 logging.basicConfig(
     level=logging.INFO,

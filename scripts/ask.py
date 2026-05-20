@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""ask.py — CLI shim around kgforge.engine.ask.
+"""ask.py — CLI shim around callimachus.engine.ask.
 
 Natural-language QA over the compliance ontology.
 
@@ -29,9 +29,9 @@ except ImportError:
 
 import anthropic                           # noqa: E402
 
-from kgforge.engine import ask as engine   # noqa: E402
-from kgforge.engine import store as store_engine  # noqa: E402
-from kgforge.pack import load_builtin      # noqa: E402
+from callimachus.engine import ask as engine   # noqa: E402
+from callimachus.engine import store as store_engine  # noqa: E402
+from callimachus.pack import load_builtin      # noqa: E402
 
 SCHEMA_TTL = REPO_ROOT / "schema" / "carib_compliance.ttl"
 VAULT_TTL = REPO_ROOT / "vault" / "vault.ttl"

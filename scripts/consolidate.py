@@ -20,11 +20,11 @@ try:
 except ImportError:
     pass
 
-from kgforge.engine.consolidator import (  # noqa: E402
+from callimachus.engine.consolidator import (  # noqa: E402
     consolidate,
     write_proposal_files,
 )
-from kgforge.project.project import load_project    # noqa: E402
+from callimachus.project.project import load_project    # noqa: E402
 
 
 def main(argv: list[str] | None = None) -> int:

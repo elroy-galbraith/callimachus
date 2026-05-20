@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""highlight.py — CLI shim around kgforge.engine.highlight.
+"""highlight.py — CLI shim around callimachus.engine.highlight.
 
 Inject yellow highlight annotations into a vault source PDF at the
 location of each entity's source_text.
@@ -18,8 +18,8 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
-from kgforge.engine import highlight as engine  # noqa: E402
-from kgforge.pack import load_builtin           # noqa: E402
+from callimachus.engine import highlight as engine  # noqa: E402
+from callimachus.pack import load_builtin           # noqa: E402
 
 DEFAULT_VAULT = REPO_ROOT / "vault"
 

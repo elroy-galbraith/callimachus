@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""extractor.py — CLI shim around kgforge.engine.extractor.
+"""extractor.py — CLI shim around callimachus.engine.extractor.
 
 Pipeline: PDF path → text extraction (Docling or pdfplumber fallback)
           → Claude Haiku (JSON Schema tool use) → Markdown+YAML vault files.
@@ -29,8 +29,8 @@ try:
 except ImportError:
     pass
 
-from kgforge.engine import extractor as engine  # noqa: E402
-from kgforge.pack import load_builtin           # noqa: E402
+from callimachus.engine import extractor as engine  # noqa: E402
+from callimachus.pack import load_builtin           # noqa: E402
 
 DEFAULT_VAULT = REPO_ROOT / "vault"
 

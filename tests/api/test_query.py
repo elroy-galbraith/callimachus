@@ -14,8 +14,8 @@ from unittest.mock import patch
 import pytest
 from fastapi.testclient import TestClient
 
-from kgforge.api.main import create_app
-from kgforge.api.models import NLAnswerOut
+from callimachus.api.main import create_app
+from callimachus.api.models import NLAnswerOut
 
 
 @pytest.fixture(scope="module")
@@ -102,15 +102,15 @@ def test_nl_ask_job_orchestration(client: TestClient, monkeypatch) -> None:
 
     with patch("anthropic.Anthropic") as fake_client, \
          patch(
-             "kgforge.api.routers.query.ask_engine.synthesize_sparql",
+             "callimachus.api.routers.query.ask_engine.synthesize_sparql",
              return_value=("SELECT * WHERE { ?s ?p ?o }", "test rationale"),
          ), \
          patch(
-             "kgforge.api.routers.query.ask_engine.run_sparql",
+             "callimachus.api.routers.query.ask_engine.run_sparql",
              return_value=fake_results,
          ), \
          patch(
-             "kgforge.api.routers.query.ask_engine.summarise",
+             "callimachus.api.routers.query.ask_engine.summarise",
              return_value="**Test answer** with [citation](vault/x.md).",
          ):
         fake_client.return_value = object()

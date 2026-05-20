@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""to_turtle.py — CLI shim around kgforge.engine.to_turtle.
+"""to_turtle.py — CLI shim around callimachus.engine.to_turtle.
 
 Usage:
     python scripts/to_turtle.py                     # writes vault/vault.ttl
@@ -15,8 +15,8 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
-from kgforge.engine import to_turtle as engine  # noqa: E402
-from kgforge.pack import load_builtin           # noqa: E402
+from callimachus.engine import to_turtle as engine  # noqa: E402
+from callimachus.pack import load_builtin           # noqa: E402
 
 
 def main() -> None:

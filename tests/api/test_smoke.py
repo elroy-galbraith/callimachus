@@ -12,7 +12,7 @@ from __future__ import annotations
 import pytest
 from fastapi.testclient import TestClient
 
-from kgforge.api.main import create_app
+from callimachus.api.main import create_app
 
 
 @pytest.fixture(scope="module")

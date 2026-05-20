@@ -18,7 +18,7 @@ vault.ttl
 # Inbox PDFs — processing payloads; keep history clean
 inbox/*.pdf
 
-# Approval-backend audit log (FilesystemBackend, kgforge.approval.filesystem)
+# Approval-backend audit log (FilesystemBackend, callimachus.approval.filesystem)
 audit.sqlite
 **/audit.sqlite
 

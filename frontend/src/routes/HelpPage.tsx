@@ -13,9 +13,10 @@ export function HelpPage() {
     <Stack>
       <Title order={2}>Help</Title>
       <Text c="dimmed">
-        kgforge is a configurable PDF → typed-entities → graph → query
-        platform. The full workflow tutorial and concept reference move
-        out of Streamlit and into this page during Phase B.3 of the refactor.
+        Callimachus is a configurable platform for turning documents into
+        typed knowledge graphs — extract entities with an LLM under a
+        declarative schema, curate them in a vault, and query the result
+        with SPARQL or natural language.
       </Text>
 
       <Accordion variant="separated">

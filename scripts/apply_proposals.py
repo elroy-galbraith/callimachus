@@ -16,8 +16,8 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
-from kgforge.engine.proposal_applier import apply_approved  # noqa: E402
-from kgforge.project.project import load_project            # noqa: E402
+from callimachus.engine.proposal_applier import apply_approved  # noqa: E402
+from callimachus.project.project import load_project            # noqa: E402
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -30,7 +30,7 @@ def main(argv: list[str] | None = None) -> int:
     project = load_project(args.project)
 
     if args.dry_run:
-        from kgforge.engine.consolidator import list_proposal_files, load_proposal_file
+        from callimachus.engine.consolidator import list_proposal_files, load_proposal_file
         approved = []
         for p in list_proposal_files(project.vault_dir):
             meta = load_proposal_file(p) or {}

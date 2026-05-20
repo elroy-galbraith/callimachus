@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""load_to_oxigraph.py — CLI shim around kgforge.engine.store.
+"""load_to_oxigraph.py — CLI shim around callimachus.engine.store.
 
 Load schema + vault Turtle into an in-memory Oxigraph store and run
 SPARQL competency queries.
@@ -19,8 +19,8 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT))
 
-from kgforge.engine import store as engine  # noqa: E402
-from kgforge.pack import load_builtin       # noqa: E402
+from callimachus.engine import store as engine  # noqa: E402
+from callimachus.pack import load_builtin       # noqa: E402
 
 SCHEMA_TTL = REPO_ROOT / "schema" / "carib_compliance.ttl"
 VAULT_TTL = REPO_ROOT / "vault" / "vault.ttl"

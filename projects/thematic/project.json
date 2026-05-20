@@ -5,7 +5,7 @@
   "vault_dir": "vault",
   "inbox_dir": "inbox",
   "sources_dir": "vault/sources",
-  "schema_ttl": "../../kgforge/pack/builtin/thematic/schema.ttl",
-  "sparql_dir": "../../kgforge/pack/builtin/thematic/sparql",
+  "schema_ttl": "../../callimachus/pack/builtin/thematic/schema.ttl",
+  "sparql_dir": "../../callimachus/pack/builtin/thematic/sparql",
   "approval": {"backend": "filesystem"}
 }

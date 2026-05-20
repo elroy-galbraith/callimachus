@@ -15,12 +15,12 @@ import pytest
 import yaml
 from fastapi.testclient import TestClient
 
-import kgforge.api.deps as api_deps
-import kgforge.project.project as project_module
-from kgforge.api.main import create_app
-from kgforge.engine.consolidator import Proposal
-from kgforge.engine.proposal_applier import ApplyResult
-from kgforge.project import create_from_template
+import callimachus.api.deps as api_deps
+import callimachus.project.project as project_module
+from callimachus.api.main import create_app
+from callimachus.engine.consolidator import Proposal
+from callimachus.engine.proposal_applier import ApplyResult
+from callimachus.project import create_from_template
 
 
 def _seed_vault_entity(vault_dir: Path, name: str, **meta) -> Path:
@@ -130,7 +130,7 @@ def test_consolidator_job_writes_proposals(
     ]
 
     with patch(
-        "kgforge.api.routers.proposals.run_consolidator_engine",
+        "callimachus.api.routers.proposals.run_consolidator_engine",
         return_value=fake_proposals,
     ):
         r = client.post("/api/projects/test_proposals/proposals/run")
@@ -262,7 +262,7 @@ def test_apply_job_runs_through_results(
         ),
     ]
     with patch(
-        "kgforge.api.routers.proposals.apply_approved",
+        "callimachus.api.routers.proposals.apply_approved",
         return_value=fake_results,
     ):
         r = client.post("/api/projects/test_proposals/proposals/apply")

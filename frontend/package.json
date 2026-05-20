@@ -1,12 +1,12 @@
 {
-  "name": "kgforge-frontend",
+  "name": "callimachus-frontend",
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "React frontend for the kgforge HTTP API.",
+  "description": "React frontend for the callimachus HTTP API.",
   "scripts": {
     "dev": "vite",
-    "dev:api": "uvicorn kgforge.api.main:app --reload --port 8000 --app-dir ..",
+    "dev:api": "uvicorn callimachus.api.main:app --reload --port 8000 --app-dir ..",
     "dev:all": "concurrently -k -n api,web -c blue,green \"npm:dev:api\" \"npm:dev\"",
     "build": "tsc -b && vite build",
     "preview": "vite preview",

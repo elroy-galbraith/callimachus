@@ -15,11 +15,11 @@ from unittest.mock import patch
 import pytest
 from fastapi.testclient import TestClient
 
-import kgforge.api.deps as api_deps
-import kgforge.project.project as project_module
-from kgforge.api.main import create_app
-from kgforge.approval.base import Submission, SubmissionRef
-from kgforge.project import create_from_template
+import callimachus.api.deps as api_deps
+import callimachus.project.project as project_module
+from callimachus.api.main import create_app
+from callimachus.approval.base import Submission, SubmissionRef
+from callimachus.project import create_from_template
 
 
 @pytest.fixture
@@ -148,7 +148,7 @@ def test_process_job_orchestrates_per_file(
         )
 
     with patch(
-        "kgforge.api.routers.inbox.curator_engine.process_pdf",
+        "callimachus.api.routers.inbox.curator_engine.process_pdf",
         side_effect=fake_process_pdf,
     ):
         r = client.post("/api/projects/test_inbox/inbox/process")

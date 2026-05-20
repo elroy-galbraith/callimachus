@@ -52,7 +52,7 @@ export function ProjectShell() {
         <Group h="100%" px="md" justify="space-between">
           <Group>
             <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
-            <Title order={4}>kgforge</Title>
+            <Title order={4}>Callimachus</Title>
           </Group>
           {project && (
             <Group gap="xs">
