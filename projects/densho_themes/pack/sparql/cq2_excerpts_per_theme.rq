@@ -1,0 +1,19 @@
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX tha:  <https://ontology.example.org/thematic/>
+
+# CQ2 — For each Theme, which Excerpts support it?
+#
+# Walks two paths to evidence:
+#   1. Direct: Excerpt -supportsTheme-> Theme
+#   2. Transitive: Excerpt -codedAs-> Code (Codes attached to a Theme's
+#      Sub-themes via hasSubtheme). The current pack doesn't store
+#      Code→Subtheme directly, so the transitive path is omitted here.
+SELECT ?theme ?themeLabel ?excerpt ?excerptLabel ?speaker WHERE {
+    ?theme a tha:Theme ;
+           rdfs:label ?themeLabel .
+    ?excerpt a tha:Excerpt ;
+             rdfs:label ?excerptLabel ;
+             tha:supportsTheme ?theme .
+    OPTIONAL { ?excerpt tha:spokenBy ?speaker . }
+}
+ORDER BY ?themeLabel ?excerptLabel

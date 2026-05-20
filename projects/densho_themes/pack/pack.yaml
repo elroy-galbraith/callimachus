@@ -1,0 +1,110 @@
+# Qualitative Thematic Analysis — domain pack.
+#
+# Proves the abstraction works for a non-legal use case: themes,
+# sub-themes, codes, and excerpts extracted from interview transcripts.
+
+schema_version: 1
+
+metadata:
+  name: thematic
+  label: "Qualitative Thematic Analysis"
+  description: >
+    Themes, sub-themes, codes, and excerpts extracted from interview
+    transcripts. Each Excerpt cites its speaker (P01, P02, …) and timestamp.
+  version: "0.1.0"
+  author: "Elroy Galbraith"
+
+namespaces:
+  base_iri:      "https://ontology.example.org/thematic/"
+  entity_iri:    "https://ontology.example.org/thematic/entity/"
+  prefix:        "tha"
+  entity_prefix: "thae"
+
+classes:
+  - {name: Theme,    label: "Theme",     description: "A high-level thematic category that recurs across interviews."}
+  - {name: Subtheme, label: "Sub-theme", parent: Theme, description: "A finer-grained subdivision of a Theme."}
+  - {name: Code,     label: "Code",      description: "An atomic analytic label applied to a passage."}
+  - {name: Excerpt,  label: "Excerpt",   description: "A verbatim quote from an interview, with speaker and turn metadata."}
+
+properties:
+  - {name: hasSubtheme,  domain: Theme,   range: Subtheme, prompt_hint: "A Theme decomposes into one or more Sub-themes."}
+  - {name: codedAs,      domain: Excerpt, range: Code,     prompt_hint: "An Excerpt is labelled with one or more Codes."}
+  - {name: supportsTheme,domain: Excerpt, range: Theme,    prompt_hint: "An Excerpt is evidence for a Theme (typically via its Codes)."}
+  - {name: spokenBy,     domain: Excerpt, range: "xsd:string", datatype: true,
+     prompt_hint: "The participant ID that spoke the Excerpt (e.g. P03)."}
+
+prompt:
+  version: thematic-v1
+  text_window_chars: 12000
+  max_output_tokens: 8192
+  few_shot: |
+    EXAMPLE INPUT (excerpt from an interview transcript):
+    P03 [00:14:22]: "I just felt completely shut out — like nobody was telling me
+    what was actually going on with my data."
+
+    EXAMPLE OUTPUT:
+    {
+      "entities": [
+        {
+          "class": "Code",
+          "id": "interview03_code_lack_of_transparency",
+          "label": "Lack of transparency",
+          "source_section": "Interview 03 / 14:22",
+          "source_text": "I just felt completely shut out — like nobody was telling me what was actually going on with my data.",
+          "properties": {}
+        },
+        {
+          "class": "Excerpt",
+          "id": "interview03_excerpt_t1422",
+          "label": "P03 on data transparency",
+          "source_section": "Interview 03 / 14:22",
+          "source_text": "I just felt completely shut out — like nobody was telling me what was actually going on with my data.",
+          "properties": {
+            "codedAs": "interview03_code_lack_of_transparency",
+            "spokenBy": "P03"
+          }
+        }
+      ]
+    }
+    ---
+  system: |
+    You are a qualitative-research assistant performing thematic analysis on
+    interview transcripts. Extract entities using only these classes:
+    Theme, Subtheme, Code, Excerpt.
+
+    Rules:
+      - Each Excerpt MUST cite source_section as "Interview <id> / <turn>"
+        (or "<id> / <timestamp>") and set properties.spokenBy to the
+        participant ID (e.g. P01, P02, P03).
+      - Codes are atomic analytic labels applied to passages — keep their
+        labels short (2-5 words).
+      - Group recurring Codes under Sub-themes; group Sub-themes under Themes.
+      - Always prefix entity IDs with the document ID ({doc_id}_).
+      - Be conservative: only assign Codes that are explicitly demonstrated
+        in the text. Do not invent themes that are not visible in the data.
+  user: |2
+        {few_shot}
+        Document ID: {doc_id}
+        Prompt version: {prompt_version}
+
+        Extract themes, sub-themes, codes, and excerpts from the transcript below.
+        Use the extract_entities tool.
+
+        ---
+        {text_window}
+        ---
+
+competency_questions:
+  - {id: cq1, label: "Codes recurring across interviews", file: sparql/cq1_codes_recur.rq}
+  - {id: cq2, label: "Excerpts per theme",                file: sparql/cq2_excerpts_per_theme.rq}
+  - {id: cq3, label: "Everything P03 said",               file: sparql/cq3_excerpts_by_speaker.rq}
+
+hooks:
+  module: hooks.py
+
+models:
+  extractor: claude-haiku-4-5-20251001
+  ask:       claude-sonnet-4-6
+
+inbox:
+  accepted_extensions: [".pdf", ".txt", ".md", ".vtt"]

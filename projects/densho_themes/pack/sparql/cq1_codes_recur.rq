@@ -1,0 +1,15 @@
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX tha:  <https://ontology.example.org/thematic/>
+
+# CQ1 — Which codes have been applied at least once?
+#
+# Sorted by how many excerpts reference each code (most-used first).
+# A code with high count across interviews is a candidate for promotion
+# to a Sub-theme.
+SELECT ?code ?label (COUNT(?excerpt) AS ?nExcerpts) WHERE {
+    ?code a tha:Code ;
+          rdfs:label ?label .
+    OPTIONAL { ?excerpt tha:codedAs ?code . }
+}
+GROUP BY ?code ?label
+ORDER BY DESC(?nExcerpts) ?label

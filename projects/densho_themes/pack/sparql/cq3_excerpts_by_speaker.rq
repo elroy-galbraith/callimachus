@@ -1,0 +1,20 @@
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+PREFIX dcterms: <http://purl.org/dc/terms/>
+PREFIX tha:  <https://ontology.example.org/thematic/>
+
+# CQ3 — Everything spoken by participant P03 (change literal to query
+# any other participant). Returns the verbatim text plus the codes
+# applied to each excerpt.
+SELECT ?excerpt ?excerptLabel ?section ?text ?code ?codeLabel WHERE {
+    ?excerpt a tha:Excerpt ;
+             rdfs:label ?excerptLabel ;
+             tha:spokenBy "P03" .
+    OPTIONAL { ?excerpt skos:definition ?text . }
+    OPTIONAL { ?excerpt dcterms:source ?section . }
+    OPTIONAL {
+        ?excerpt tha:codedAs ?code .
+        ?code rdfs:label ?codeLabel .
+    }
+}
+ORDER BY ?section ?codeLabel

@@ -1,0 +1,13 @@
+{
+  "name": "densho_themes",
+  "label": "Densho Thematic Study",
+  "pack": "pack",
+  "vault_dir": "vault",
+  "inbox_dir": "inbox",
+  "sources_dir": "vault/sources",
+  "approval": {
+    "backend": "filesystem"
+  },
+  "schema_ttl": "pack/schema.ttl",
+  "sparql_dir": "pack/sparql"
+}

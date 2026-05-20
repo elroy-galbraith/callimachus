@@ -1,0 +1,60 @@
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix tha:  <https://ontology.example.org/thematic/> .
+
+# Qualitative Thematic Analysis schema — minimal ontology for
+# Theme / Subtheme / Code / Excerpt with the four supporting properties.
+
+tha: a owl:Ontology ;
+    rdfs:label "Qualitative Thematic Analysis"@en ;
+    rdfs:comment "A minimal ontology for thematic coding of interview transcripts."@en .
+
+# ── Classes ──────────────────────────────────────────────────────────────────
+
+tha:Theme a owl:Class ;
+    rdfs:label "Theme"@en ;
+    rdfs:comment "A high-level thematic category that recurs across interviews."@en .
+
+tha:Subtheme a owl:Class ;
+    rdfs:label "Sub-theme"@en ;
+    rdfs:subClassOf tha:Theme ;
+    rdfs:comment "A finer-grained subdivision of a Theme."@en .
+
+tha:Code a owl:Class ;
+    rdfs:label "Code"@en ;
+    rdfs:comment "An atomic analytic label applied to a passage."@en .
+
+tha:Excerpt a owl:Class ;
+    rdfs:label "Excerpt"@en ;
+    rdfs:comment "A verbatim quote from an interview, with speaker and turn metadata."@en .
+
+# ── Object properties ────────────────────────────────────────────────────────
+
+tha:hasSubtheme a owl:ObjectProperty ;
+    rdfs:label "has sub-theme"@en ;
+    rdfs:domain tha:Theme ;
+    rdfs:range tha:Subtheme ;
+    rdfs:comment "Decomposes a Theme into a Sub-theme."@en .
+
+tha:codedAs a owl:ObjectProperty ;
+    rdfs:label "coded as"@en ;
+    rdfs:domain tha:Excerpt ;
+    rdfs:range tha:Code ;
+    rdfs:comment "Associates an Excerpt with one of the analytic Codes."@en .
+
+tha:supportsTheme a owl:ObjectProperty ;
+    rdfs:label "supports theme"@en ;
+    rdfs:domain tha:Excerpt ;
+    rdfs:range tha:Theme ;
+    rdfs:comment "Excerpt → Theme: evidence in support of a thematic claim."@en .
+
+# ── Datatype properties ──────────────────────────────────────────────────────
+
+tha:spokenBy a owl:DatatypeProperty ;
+    rdfs:label "spoken by"@en ;
+    rdfs:domain tha:Excerpt ;
+    rdfs:range xsd:string ;
+    rdfs:comment "Participant identifier for the speaker of an Excerpt (e.g. \"P03\")."@en .
