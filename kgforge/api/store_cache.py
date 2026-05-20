@@ -20,6 +20,8 @@ from kgforge.project import Project
 
 if TYPE_CHECKING:
     import pyoxigraph
+    from kgforge.pack import DomainPack
+    from kgforge.pack.model import CompetencyQuestion
 
 
 def _mtime_or_zero(path: Path | None) -> float:
@@ -90,26 +92,36 @@ def rebuild_vault_ttl(project: Project) -> int:
     return size
 
 
-def resolve_cq_sparql(project: Project, cq_id: str) -> str:
-    """Return the SPARQL body for a competency question id.
+def resolve_cq_path(
+    pack: "DomainPack", cq: "CompetencyQuestion", sparql_dir: Path | None
+) -> Path | None:
+    """Locate ``cq.file`` on disk, ``None`` if it isn't anywhere.
 
-    Resolution mirrors ``DomainPackOut.from_pack``: pack-relative first,
-    then ``project.sparql_dir / basename`` as a legacy fallback.
+    Precedence: pack-relative (``pack.pack_dir / cq.file``) first, then
+    ``sparql_dir / basename(cq.file)`` as the legacy fallback for projects
+    that keep SPARQL files outside the pack (e.g. ``projects/compliance``).
     """
+    candidates: list[Path] = []
+    if pack.pack_dir is not None:
+        candidates.append(pack.pack_dir / cq.file)
+    if sparql_dir is not None:
+        candidates.append(sparql_dir / Path(cq.file).name)
+    for c in candidates:
+        if c.exists():
+            return c
+    return None
+
+
+def resolve_cq_sparql(project: Project, cq_id: str) -> str:
+    """Return the SPARQL body for a competency question id."""
     pack = project.pack
     for cq in pack.competency_questions:
         if cq.id != cq_id:
             continue
-        candidate: Path | None = None
-        if pack.pack_dir is not None:
-            candidate = pack.pack_dir / cq.file
-            if not candidate.exists() and project.sparql_dir is not None:
-                candidate = project.sparql_dir / Path(cq.file).name
-        elif project.sparql_dir is not None:
-            candidate = project.sparql_dir / Path(cq.file).name
-        if candidate is None or not candidate.exists():
+        path = resolve_cq_path(pack, cq, project.sparql_dir)
+        if path is None:
             raise FileNotFoundError(
                 f"SPARQL file not found for cq {cq_id!r}: {cq.file}"
             )
-        return candidate.read_text(encoding="utf-8")
+        return path.read_text(encoding="utf-8")
     raise KeyError(f"no competency question with id {cq_id!r}")

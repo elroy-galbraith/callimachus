@@ -29,9 +29,10 @@ import {
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
-import { ApiError } from "../api/client";
+import { extractErrorDetail } from "../api/client";
 import {
   useJob,
+  useJobPolling,
   useKickNlAsk,
   useProjectPack,
   useRebuildTtl,
@@ -226,7 +227,7 @@ function SparqlTab({ projectName }: { projectName: string }) {
       </Group>
       {run.error && (
         <Alert color="red" title="Query failed">
-          {extractDetail(run.error)}
+          {extractErrorDetail(run.error)}
         </Alert>
       )}
       {run.data && (
@@ -258,15 +259,7 @@ function AskTab({
   const [jobId, setJobId] = useState<string | null>(null);
   const [drawer, drawerHandlers] = useDisclosure(false);
   const job = useJob(jobId ?? undefined);
-
-  // Poll job until terminal, then stop.
-  useEffect(() => {
-    if (!jobId) return;
-    if (!job.data) return;
-    if (job.data.status === "done" || job.data.status === "error") return;
-    const t = setTimeout(() => job.refetch(), 1000);
-    return () => clearTimeout(t);
-  }, [jobId, job]);
+  useJobPolling(job, jobId);
 
   const answer =
     job.data?.status === "done"
@@ -309,7 +302,7 @@ function AskTab({
                   onError: (e) =>
                     notifications.show({
                       title: "Ask failed",
-                      message: extractDetail(e),
+                      message: extractErrorDetail(e),
                       color: "red",
                     }),
                 },
@@ -384,25 +377,12 @@ function AskTab({
 
 // ---------- helpers -------------------------------------------------------
 
-function extractDetail(e: unknown): string {
-  if (e instanceof ApiError) {
-    if (typeof e.body === "object" && e.body && "detail" in e.body) {
-      return String((e.body as { detail: unknown }).detail);
-    }
-    return String(e.body);
-  }
-  return (e as Error).message;
-}
+const JOB_BADGE_COLOR: Record<string, string> = {
+  done: "green",
+  error: "red",
+  running: "blue",
+};
 
 function badgeColor(status: string | undefined): string {
-  switch (status) {
-    case "done":
-      return "green";
-    case "error":
-      return "red";
-    case "running":
-      return "blue";
-    default:
-      return "gray";
-  }
+  return JOB_BADGE_COLOR[status ?? ""] ?? "gray";
 }

@@ -89,19 +89,17 @@ class DomainPackOut(BaseModel):
         to ``sparql_dir / basename(cq.file)`` for legacy projects that
         keep SPARQL files outside the pack (e.g. ``projects/compliance``).
         """
+        # Local import: store_cache imports DomainPack at type-check
+        # time, which would be circular if imported at module scope.
+        from kgforge.api.store_cache import resolve_cq_path
+
         cqs: list[CompetencyQuestionOut] = []
         for cq in pack.competency_questions:
             sparql: str | None = None
             if include_cq_text:
-                candidate: Path | None = None
-                if pack.pack_dir is not None:
-                    candidate = pack.pack_dir / cq.file
-                    if not candidate.exists() and sparql_dir is not None:
-                        candidate = sparql_dir / Path(cq.file).name
-                elif sparql_dir is not None:
-                    candidate = sparql_dir / Path(cq.file).name
-                if candidate is not None and candidate.exists():
-                    sparql = candidate.read_text(encoding="utf-8")
+                path = resolve_cq_path(pack, cq, sparql_dir)
+                if path is not None:
+                    sparql = path.read_text(encoding="utf-8")
             cqs.append(
                 CompetencyQuestionOut(
                     id=cq.id, label=cq.label, file=cq.file, sparql=sparql

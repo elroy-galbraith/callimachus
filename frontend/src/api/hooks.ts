@@ -1,8 +1,10 @@
+import { useEffect } from "react";
 import {
   useMutation,
   useQuery,
   useQueryClient,
   type UseQueryOptions,
+  type UseQueryResult,
 } from "@tanstack/react-query";
 
 import { api } from "./client";
@@ -60,6 +62,9 @@ export function useProject(name: string | undefined) {
     queryKey: name ? qk.project(name) : ["projects", "__none__"],
     queryFn: () => api.get<ProjectDetail>(`/projects/${name}`),
     enabled: !!name,
+    // Project detail (paths, pack snapshot) only changes when a user
+    // edits pack.yaml on disk. Don't thrash on every nav.
+    staleTime: 5 * 60_000,
   });
 }
 
@@ -88,6 +93,7 @@ export function useProjectPack(name: string | undefined) {
     queryKey: name ? qk.projectPack(name) : ["projects", "__none__", "pack"],
     queryFn: () => api.get<DomainPackOut>(`/projects/${name}/pack`),
     enabled: !!name,
+    staleTime: 5 * 60_000,
   });
 }
 
@@ -96,6 +102,7 @@ export function useToolSchema(name: string | undefined) {
     queryKey: name ? qk.toolSchema(name) : ["projects", "__none__", "schema", "tool"],
     queryFn: () => api.get<ToolSchemaOut>(`/projects/${name}/schema/tool-schema`),
     enabled: !!name,
+    staleTime: 5 * 60_000,
   });
 }
 
@@ -148,6 +155,27 @@ export function useJob(jobId: string | undefined) {
     queryFn: () => api.get<JobStateOut>(`/jobs/${jobId}`),
     enabled: !!jobId,
   });
+}
+
+/**
+ * Re-fetch a job's snapshot every ``intervalMs`` while it's still
+ * running. The interval clears as soon as the job reaches a terminal
+ * status (or the jobId becomes null). The SSE drawer is the primary
+ * channel for streaming; this is the fallback for callers that just
+ * need the final ``result``.
+ */
+export function useJobPolling(
+  job: UseQueryResult<JobStateOut>,
+  jobId: string | null | undefined,
+  intervalMs = 1000,
+): void {
+  useEffect(() => {
+    if (!jobId || !job.data) return;
+    const status = job.data.status;
+    if (status === "done" || status === "error") return;
+    const t = setTimeout(() => job.refetch(), intervalMs);
+    return () => clearTimeout(t);
+  }, [jobId, job, intervalMs]);
 }
 
 // ---------- Inbox -----------------------------------------------------------

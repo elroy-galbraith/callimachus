@@ -30,10 +30,11 @@ import { useQueryClient } from "@tanstack/react-query";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
-import { ApiError } from "../api/client";
+import { extractErrorDetail } from "../api/client";
 import {
   qk,
   useJob,
+  useJobPolling,
   useKickApply,
   useKickConsolidator,
   usePatchProposal,
@@ -83,36 +84,35 @@ export function ProposalsPage() {
   const { projectName } = useActiveProject();
   const { data, isPending, error } = useProposals(projectName);
 
-  const [consolidatorJobId, setConsolidatorJobId] = useState<string | null>(null);
-  const [applyJobId, setApplyJobId] = useState<string | null>(null);
+  const [job_, setJob] = useState<{ id: string; kind: "consolidator" | "apply" } | null>(
+    null,
+  );
   const [drawer, drawerHandlers] = useDisclosure(false);
-  const [drawerTitle, setDrawerTitle] = useState("Job");
-  const [activeJob, setActiveJob] = useState<string | null>(null);
 
-  const consolidatorJob = useJob(consolidatorJobId ?? undefined);
-  const applyJob = useJob(applyJobId ?? undefined);
+  const job = useJob(job_?.id);
   const qc = useQueryClient();
+  useJobPolling(job, job_?.id);
 
-  // Poll while a job is running.
+  // Refresh the proposals list when either job lands.
   useEffect(() => {
-    const which = activeJob === "consolidator" ? consolidatorJob : applyJob;
-    if (!which.data) return;
-    if (which.data.status === "done" || which.data.status === "error") {
-      if (projectName) qc.invalidateQueries({ queryKey: qk.proposals(projectName) });
-      return;
+    if (!job.data || !projectName) return;
+    if (job.data.status === "done" || job.data.status === "error") {
+      qc.invalidateQueries({ queryKey: qk.proposals(projectName) });
     }
-    const t = setTimeout(() => which.refetch(), 1000);
-    return () => clearTimeout(t);
-  }, [activeJob, consolidatorJob, applyJob, qc, projectName]);
+  }, [job.data, qc, projectName]);
 
   const kickConsolidator = useKickConsolidator(projectName);
   const kickApply = useKickApply(projectName);
 
-  // Narrow the unknown result into the typed shape for rendering.
+  // Apply-job result is the only one we render inline (the consolidator
+  // just refreshes the proposals list).
   const applyResult: ApplyJobResult | null =
-    applyJob.data?.status === "done" && applyJob.data.result
-      ? (applyJob.data.result as ApplyJobResult)
+    job_?.kind === "apply" && job.data?.status === "done" && job.data.result
+      ? (job.data.result as ApplyJobResult)
       : null;
+
+  const drawerTitle =
+    job_?.kind === "apply" ? "Apply approved" : "Consolidator";
 
   return (
     <Stack>
@@ -138,15 +138,13 @@ export function ProposalsPage() {
               onClick={() =>
                 kickConsolidator.mutate(undefined, {
                   onSuccess: ({ job_id }) => {
-                    setConsolidatorJobId(job_id);
-                    setActiveJob("consolidator");
-                    setDrawerTitle("Consolidator");
+                    setJob({ id: job_id, kind: "consolidator" });
                     drawerHandlers.open();
                   },
                   onError: (e) =>
                     notifications.show({
                       title: "Run failed",
-                      message: extractDetail(e),
+                      message: extractErrorDetail(e),
                       color: "red",
                     }),
                 })
@@ -162,15 +160,13 @@ export function ProposalsPage() {
               onClick={() =>
                 kickApply.mutate(undefined, {
                   onSuccess: ({ job_id }) => {
-                    setApplyJobId(job_id);
-                    setActiveJob("apply");
-                    setDrawerTitle("Apply approved");
+                    setJob({ id: job_id, kind: "apply" });
                     drawerHandlers.open();
                   },
                   onError: (e) =>
                     notifications.show({
                       title: "Apply failed",
-                      message: extractDetail(e),
+                      message: extractErrorDetail(e),
                       color: "red",
                     }),
                 })
@@ -178,7 +174,7 @@ export function ProposalsPage() {
             >
               Apply {data?.counts.approved ?? 0} approved
             </Button>
-            {(consolidatorJobId || applyJobId) && (
+            {job_ && (
               <Button
                 variant="subtle"
                 size="compact-sm"
@@ -232,13 +228,7 @@ export function ProposalsPage() {
       )}
 
       <JobProgressDrawer
-        jobId={
-          activeJob === "consolidator"
-            ? consolidatorJobId
-            : activeJob === "apply"
-            ? applyJobId
-            : null
-        }
+        jobId={job_?.id ?? null}
         opened={drawer}
         title={drawerTitle}
         onClose={drawerHandlers.close}
@@ -345,7 +335,7 @@ function ProposalCard({
         onError: (e) =>
           notifications.show({
             title: "Patch failed",
-            message: extractDetail(e),
+            message: extractErrorDetail(e),
             color: "red",
           }),
       },
@@ -476,12 +466,3 @@ function ProposalCard({
 
 // ---------- helpers -------------------------------------------------------
 
-function extractDetail(e: unknown): string {
-  if (e instanceof ApiError) {
-    if (typeof e.body === "object" && e.body && "detail" in e.body) {
-      return String((e.body as { detail: unknown }).detail);
-    }
-    return String(e.body);
-  }
-  return (e as Error).message;
-}

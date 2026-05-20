@@ -128,15 +128,16 @@ def payload_summary(meta: dict[str, Any]) -> str:
 def find_proposal_file(vault_dir: Path, proposal_id: str) -> Path | None:
     """Resolve ``proposal_id`` (e.g. ``proposal_abcd1234``) to its file.
 
-    Proposal filenames are ``proposal_<fp>_<slug>.md`` and the frontmatter
-    ``proposal_id`` is ``proposal_<fp>``. We scan the proposals dir and
-    match on the frontmatter rather than filename prefixes, so a slug
-    change between consolidator runs doesn't break links.
+    Filenames follow ``<proposal_id>_<slug>.md`` (see
+    ``consolidator.write_proposal_files``), so a glob lets us skip
+    parsing every proposal's frontmatter. The frontmatter is still
+    checked on a hit to defend against a slug colliding with an unrelated
+    proposal id.
     """
     out_dir = vault_dir / PROPOSALS_DIRNAME
     if not out_dir.exists():
         return None
-    for path in list_proposal_files(vault_dir):
+    for path in out_dir.glob(f"{proposal_id}_*.md"):
         meta = load_proposal_file(path) or {}
         if meta.get("proposal_id") == proposal_id:
             return path

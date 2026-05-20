@@ -29,20 +29,22 @@ import {
   IconX,
 } from "@tabler/icons-react";
 
-import { ApiError } from "../api/client";
+import { extractErrorDetail } from "../api/client";
+import { useQueryClient } from "@tanstack/react-query";
+
 import {
+  qk,
   useApprovePending,
   useClearInbox,
   useInbox,
   useJob,
+  useJobPolling,
   useKickProcess,
   useUploadInbox,
   usePending,
   useRejectPending,
   useProject,
 } from "../api/hooks";
-import { qk } from "../api/hooks";
-import { useQueryClient } from "@tanstack/react-query";
 import { JobProgressDrawer } from "../components/JobProgressDrawer";
 import { useActiveProject } from "../state/useActiveProject";
 import type {
@@ -143,15 +145,15 @@ function UploadSection({ projectName }: { projectName: string }) {
             onError: (e) =>
               notifications.show({
                 title: "Upload failed",
-                message: extractDetail(e),
+                message: extractErrorDetail(e),
                 color: "red",
               }),
           })
         }
         loading={upload.isPending}
-        accept={accepted.map(() => `application/octet-stream`)}
-        // Mantine Dropzone uses MIME types for the input accept attr; we
-        // still validate server-side, so a permissive client accept is fine.
+        // Server validates extensions against pack.inbox.accepted_extensions;
+        // the client just signals "any binary OK".
+        accept={["application/octet-stream"]}
         multiple
       >
         <Group justify="center" gap="md" mih={120}>
@@ -196,13 +198,7 @@ function InboxSection({ projectName }: { projectName: string }) {
     }
   }, [jobId, job.data, qc, projectName]);
 
-  // Poll while running.
-  useEffect(() => {
-    if (!jobId || !job.data) return;
-    if (job.data.status === "done" || job.data.status === "error") return;
-    const t = setTimeout(() => job.refetch(), 1000);
-    return () => clearTimeout(t);
-  }, [jobId, job]);
+  useJobPolling(job, jobId);
 
   if (isPending)
     return (
@@ -250,7 +246,7 @@ function InboxSection({ projectName }: { projectName: string }) {
               onError: (e) =>
                 notifications.show({
                   title: "Process failed",
-                  message: extractDetail(e),
+                  message: extractErrorDetail(e),
                   color: "red",
                 }),
             })
@@ -424,7 +420,7 @@ function PendingCard({
                 onError: (e) =>
                   notifications.show({
                     title: "Approve failed",
-                    message: extractDetail(e),
+                    message: extractErrorDetail(e),
                     color: "red",
                   }),
               })
@@ -451,7 +447,7 @@ function PendingCard({
                   onError: (e) =>
                     notifications.show({
                       title: "Reject failed",
-                      message: extractDetail(e),
+                      message: extractErrorDetail(e),
                       color: "red",
                     }),
                 },
@@ -525,12 +521,3 @@ function formatPropValue(v: unknown): string {
   return String(v);
 }
 
-function extractDetail(e: unknown): string {
-  if (e instanceof ApiError) {
-    if (typeof e.body === "object" && e.body && "detail" in e.body) {
-      return String((e.body as { detail: unknown }).detail);
-    }
-    return String(e.body);
-  }
-  return (e as Error).message;
-}

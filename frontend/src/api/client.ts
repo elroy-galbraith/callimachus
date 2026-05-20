@@ -47,6 +47,21 @@ async function request<T>(
   return (await res.text()) as unknown as T;
 }
 
+/**
+ * Pull a user-readable detail out of an unknown thrown value. FastAPI's
+ * default error shape is ``{detail: string | object}``; anything else
+ * falls back to the raw body or the JS error message.
+ */
+export function extractErrorDetail(e: unknown): string {
+  if (e instanceof ApiError) {
+    if (typeof e.body === "object" && e.body && "detail" in e.body) {
+      return String((e.body as { detail: unknown }).detail);
+    }
+    return String(e.body);
+  }
+  return (e as Error).message;
+}
+
 export const api = {
   get: <T>(path: string) => request<T>(path, { method: "GET" }),
   post: <T>(path: string, json?: unknown) =>
