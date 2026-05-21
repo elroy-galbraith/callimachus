@@ -1,7 +1,6 @@
 """Projects router — list, detail, create, mutate pack settings."""
 from __future__ import annotations
 
-import yaml
 from fastapi import APIRouter, Depends, HTTPException
 
 from callimachus.api.deps import clear_project_cache, get_project
@@ -15,6 +14,7 @@ from callimachus.api.models import (
 )
 from callimachus.pack import load_builtin, load_pack
 from callimachus.pack.loader import BUILTIN_DIR
+from callimachus.pack.yaml_edit import update_pack_models as _update_pack_models_text
 from callimachus.project import Project, create_from_template, list_projects
 
 router = APIRouter(tags=["projects"])
@@ -127,15 +127,11 @@ def update_pack_models(
     except FileNotFoundError:
         raise HTTPException(status_code=500, detail=f"pack.yaml missing at {yaml_path}")
 
-    data = yaml.safe_load(original_text) or {}
-    models = dict(data.get("models") or {})
-    if body.extractor is not None:
-        models["extractor"] = body.extractor.strip()
-    if body.ask is not None:
-        models["ask"] = body.ask.strip()
-    data["models"] = models
-
-    new_text = yaml.safe_dump(data, sort_keys=False, allow_unicode=True)
+    new_text = _update_pack_models_text(
+        original_text,
+        extractor=body.extractor.strip() if body.extractor is not None else None,
+        ask=body.ask.strip() if body.ask is not None else None,
+    )
     yaml_path.write_text(new_text, encoding="utf-8")
 
     # If the new pack fails to validate (e.g. an empty string slipped

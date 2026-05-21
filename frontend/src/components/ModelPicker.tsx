@@ -1,6 +1,7 @@
 import { Autocomplete, Badge, Group, Stack, Text } from "@mantine/core";
 
 import { MODEL_CATALOG } from "../models/catalog";
+import { inferProviderId } from "../models/inferProvider";
 import type { ProviderStatus } from "../api/types";
 
 interface Props {
@@ -34,8 +35,10 @@ export function ModelPicker({
     label: m.notes ? `${m.label}  —  ${m.notes}` : m.label,
   }));
 
-  const providerId = value.includes("/") ? value.split("/", 1)[0] : "anthropic";
-  const providerStatus = providers?.find((p) => p.id === providerId);
+  const providerId = inferProviderId(value);
+  const providerStatus = providerId
+    ? providers?.find((p) => p.id === providerId)
+    : undefined;
 
   return (
     <Stack gap={4}>
