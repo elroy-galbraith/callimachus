@@ -1,0 +1,137 @@
+# Stock Exchange Regulatory Filings — domain pack.
+#
+# Maps filings, issuers, disclosures, regulators, and triggering obligations.
+
+schema_version: 1
+
+metadata:
+  name: regulatory
+  label: "Stock Exchange Regulatory Filings"
+  description: >
+    Formal corporate filings (Form 10-K, 8-K, Prospectuses), corporate issuers,
+    disclosed items, receiving regulators, and the legal/governing obligations
+    that trigger them.
+  version: "0.1.0"
+  author: "Elroy Galbraith"
+
+namespaces:
+  base_iri:      "https://ontology.example.org/regulatory/"
+  entity_iri:    "https://ontology.example.org/regulatory/entity/"
+  prefix:        "reg"
+  entity_prefix: "rege"
+
+classes:
+  - {name: Filing,     label: "Filing",     description: "A formal submission to a regulatory body or stock exchange."}
+  - {name: Issuer,     label: "Issuer",     description: "The corporate entity or legal person submitting the filing."}
+  - {name: Disclosure, label: "Disclosure", description: "A specific reporting of financial facts, risk factors, or corporate events."}
+  - {name: Regulator,  label: "Regulator",  description: "The supervisory or enforcement authority receiving the filing."}
+  - {name: Obligation, label: "Obligation", description: "A legal, statutory, or listing rule mandating the disclosure."}
+
+properties:
+  - {name: filedBy,            domain: Filing,     range: Issuer,     prompt_hint: "The corporate entity (Issuer) that submitted the Filing."}
+  - {name: filedWith,          domain: Filing,     range: Regulator,  prompt_hint: "The Regulator with whom the Filing was submitted."}
+  - {name: containsDisclosure,  domain: Filing,     range: Disclosure, prompt_hint: "The specific Disclosure or report contained in the Filing."}
+  - {name: triggersObligation,  domain: Disclosure, range: Obligation, prompt_hint: "The statutory or regulatory Obligation that mandated this Disclosure."}
+  - {name: filingDate,         domain: Filing,     range: "xsd:string", datatype: true, prompt_hint: "The calendar date the filing was made (e.g. 2026-05-15)."}
+  - {name: tickerSymbol,       domain: Issuer,     range: "xsd:string", datatype: true, prompt_hint: "The stock exchange ticker symbol of the Issuer (e.g. ACME)."}
+
+prompt:
+  version: regulatory-v1
+  text_window_chars: 10000
+  max_output_tokens: 8192
+  few_shot: |
+    EXAMPLE INPUT (verbatim paragraph from a regulatory filing):
+    On May 15, 2026, Acme Corp (ticker: ACME) filed its Form 8-K with the Securities and Exchange Commission (SEC). Under Item 1.01, and in compliance with Section 13 of the Securities Exchange Act, the Company disclosed its entry into a material definitive agreement to acquire Beta Inc.
+
+    EXAMPLE OUTPUT:
+    {
+      "entities": [
+        {
+          "class": "Issuer",
+          "id": "acme_8k2026_issuer_acme",
+          "label": "Acme Corp",
+          "source_section": "Company Info",
+          "source_text": "Acme Corp (ticker: ACME)",
+          "properties": {
+            "tickerSymbol": "ACME"
+          }
+        },
+        {
+          "class": "Regulator",
+          "id": "acme_8k2026_regulator_sec",
+          "label": "Securities and Exchange Commission",
+          "source_section": "Submission Header",
+          "source_text": "filed its Form 8-K with the Securities and Exchange Commission (SEC).",
+          "properties": {}
+        },
+        {
+          "class": "Filing",
+          "id": "acme_8k2026_filing_8k",
+          "label": "Acme Corp Form 8-K (May 15, 2026)",
+          "source_section": "Submission Header",
+          "source_text": "On May 15, 2026, Acme Corp (ticker: ACME) filed its Form 8-K with the Securities and Exchange Commission (SEC).",
+          "properties": {
+            "filedBy": "acme_8k2026_issuer_acme",
+            "filedWith": "acme_8k2026_regulator_sec",
+            "filingDate": "2026-05-15"
+          }
+        },
+        {
+          "class": "Obligation",
+          "id": "acme_8k2026_obligation_sec13",
+          "label": "Section 13 of the Securities Exchange Act",
+          "source_section": "Item 1.01",
+          "source_text": "in compliance with Section 13 of the Securities Exchange Act",
+          "properties": {}
+        },
+        {
+          "class": "Disclosure",
+          "id": "acme_8k2026_disclosure_acquisition",
+          "label": "Entry into material definitive agreement to acquire Beta Inc",
+          "source_section": "Item 1.01",
+          "source_text": "Under Item 1.01, and in compliance with Section 13 of the Securities Exchange Act, the Company disclosed its entry into a material definitive agreement to acquire Beta Inc.",
+          "properties": {
+            "triggersObligation": "acme_8k2026_obligation_sec13"
+          }
+        }
+      ]
+    }
+    ---
+  system: |
+    You are a financial regulatory compliance assistant performing legal-entity and
+    disclosure extraction on stock exchange filings (such as 10-K, 8-K, Prospectuses).
+    Extract entities using only these five classes:
+    Filing, Issuer, Disclosure, Regulator, Obligation.
+
+    Rules:
+      - Each entity MUST have a snake_case ID prefixed with the document ID ({doc_id}_).
+      - For each Issuer, extract tickerSymbol if mentioned in the text.
+      - For each Filing, extract filingDate if mentioned, and link to Issuer and Regulator.
+      - Track Disclosures and connect them to the regulatory/exchange Obligations that mandated them.
+      - Be conservative: only extract entities explicitly present in the text.
+  user: |2
+        {few_shot}
+        Document ID: {doc_id}
+        Prompt version: {prompt_version}
+
+        Extract all corporate filings, issuers, disclosures, regulators, and obligations from the text below.
+        Use the extract_entities tool.
+
+        ---
+        {text_window}
+        ---
+
+competency_questions:
+  - {id: cq1, label: "Filings by issuer",             file: sparql/cq1_filings_by_issuer.rq}
+  - {id: cq2, label: "Disclosures by event type",     file: sparql/cq2_disclosures_by_event_type.rq}
+  - {id: cq3, label: "Obligations by regulator",      file: sparql/cq3_obligations_by_regulator.rq}
+
+hooks:
+  module: null
+
+models:
+  extractor: anthropic/claude-haiku-4-5-20251001
+  ask:       anthropic/claude-sonnet-4-6
+
+inbox:
+  accepted_extensions: [".pdf", ".txt", ".md"]

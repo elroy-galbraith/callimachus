@@ -1,0 +1,12 @@
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX lit:  <https://ontology.example.org/literature/>
+
+# CQ2 — Which Claims or findings are associated with each Methodology?
+SELECT ?methodology ?methodLabel ?claim ?claimLabel WHERE {
+    ?methodology a lit:Methodology ;
+                 rdfs:label ?methodLabel .
+    ?claim a lit:Claim ;
+           rdfs:label ?claimLabel ;
+           lit:usesMethodology ?methodology .
+}
+ORDER BY ?methodLabel ?claimLabel

@@ -40,6 +40,9 @@ def test_list_project_templates(client: TestClient) -> None:
     assert isinstance(templates, list)
     names = {t["name"] for t in templates}
     assert "compliance" in names
+    assert "literature" in names
+    assert "regulatory" in names
+
 
 
 def test_project_detail_compliance(client: TestClient) -> None:
@@ -133,3 +136,18 @@ def test_tool_schema_shape(client: TestClient) -> None:
     schema = body["schema"]
     assert schema["type"] == "object"
     assert "entities" in schema["properties"]
+
+
+def test_builtin_packs_validation() -> None:
+    from callimachus.pack import load_builtin
+    # Test that both new packs load successfully and validate against Pydantic models.
+    lit_pack = load_builtin("literature")
+    assert lit_pack.metadata.name == "literature"
+    assert "Paper" in lit_pack.class_names
+    assert "Claim" in lit_pack.class_names
+
+    reg_pack = load_builtin("regulatory")
+    assert reg_pack.metadata.name == "regulatory"
+    assert "Filing" in reg_pack.class_names
+    assert "Issuer" in reg_pack.class_names
+

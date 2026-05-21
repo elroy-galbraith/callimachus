@@ -1,0 +1,13 @@
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX lit:  <https://ontology.example.org/literature/>
+
+# CQ1 — For each Entity/Concept, which Papers study it?
+SELECT ?entity ?entityLabel ?paper ?paperLabel ?year WHERE {
+    ?entity a lit:Entity ;
+            rdfs:label ?entityLabel .
+    ?paper a lit:Paper ;
+           rdfs:label ?paperLabel ;
+           lit:studiesEntity ?entity .
+    OPTIONAL { ?paper lit:publishedYear ?year . }
+}
+ORDER BY ?entityLabel ?paperLabel
