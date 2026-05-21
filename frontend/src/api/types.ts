@@ -105,10 +105,23 @@ export interface ProjectCreateIn {
   backend: "filesystem" | "git";
 }
 
+export interface ProviderStatus {
+  id: string;
+  label: string;
+  env_var: string;
+  configured: boolean;
+}
+
 export interface SettingsOut {
   api_key_set: boolean;
+  providers: ProviderStatus[];
   repo_root: string;
   projects_dir: string;
+}
+
+export interface ModelsUpdateIn {
+  extractor?: string | null;
+  ask?: string | null;
 }
 
 // ---------- Query / SPARQL ------------------------------------------------

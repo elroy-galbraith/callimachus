@@ -1,5 +1,6 @@
 import {
   Alert,
+  Badge,
   Button,
   Card,
   Code,
@@ -25,18 +26,45 @@ export function SettingsPage() {
 
       <Card withBorder padding="md">
         <Title order={4} mb="xs">
-          API key
+          LLM provider keys
         </Title>
         <Text size="sm" c="dimmed" mb="sm">
-          Set <Code>ANTHROPIC_API_KEY</Code> in <Code>.env</Code> at the repo
-          root, then restart the API server. Changing it from the UI is
-          intentionally not supported — the API process is one misconfigured
-          <Code>--host 0.0.0.0</Code> away from leaking the key.
+          Set the relevant environment variable in <Code>.env</Code> at the repo
+          root and restart the API server. You only need a key for the providers
+          you actually use — the model picker on the Schema page lets each
+          project choose its own. Editing keys from the UI is intentionally not
+          supported (the API process is one misconfigured{" "}
+          <Code>--host 0.0.0.0</Code> away from leaking them).
         </Text>
         {settings && (
-          <Text size="sm">
-            Currently: <strong>{settings.api_key_set ? "set" : "not set"}</strong>
-          </Text>
+          <Table withRowBorders={false} verticalSpacing="xs">
+            <Table.Tbody>
+              {settings.providers.map((p) => (
+                <Table.Tr key={p.id}>
+                  <Table.Td style={{ width: "40%" }}>
+                    <Text size="sm">{p.label}</Text>
+                  </Table.Td>
+                  <Table.Td>
+                    <Code>{p.env_var}</Code>
+                  </Table.Td>
+                  <Table.Td style={{ textAlign: "right" }}>
+                    <Badge
+                      variant="light"
+                      color={p.configured ? "green" : "gray"}
+                    >
+                      {p.configured ? "set" : "not set"}
+                    </Badge>
+                  </Table.Td>
+                </Table.Tr>
+              ))}
+            </Table.Tbody>
+          </Table>
+        )}
+        {settings && !settings.api_key_set && (
+          <Alert color="yellow" mt="sm" title="No provider key set">
+            Extraction and ask jobs will fail until at least one provider key is
+            configured.
+          </Alert>
         )}
       </Card>
 
@@ -132,8 +160,9 @@ export function SettingsPage() {
         </Group>
       </Card>
 
-      <Alert color="gray" title="More settings land in Phase B">
-        Model overrides + prompt template viewer arrive with the Schema page.
+      <Alert color="gray" title="Model overrides live on the Schema page">
+        Pick the extractor and ask/consolidator models for each project on the
+        Schema page — per-project so different domains can use different vendors.
       </Alert>
     </Stack>
   );

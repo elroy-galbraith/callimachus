@@ -1,0 +1,72 @@
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix reg:  <https://ontology.example.org/regulatory/> .
+
+reg: a owl:Ontology ;
+    rdfs:label "Stock Exchange Regulatory Filings"@en ;
+    rdfs:comment "A minimal ontology for stock exchange regulatory filings mapping filings, issuers, disclosures, regulators, and obligations."@en .
+
+# ── Classes ──────────────────────────────────────────────────────────────────
+
+reg:Filing a owl:Class ;
+    rdfs:label "Filing"@en ;
+    rdfs:comment "A formal submission to a regulatory body or stock exchange."@en .
+
+reg:Issuer a owl:Class ;
+    rdfs:label "Issuer"@en ;
+    rdfs:comment "The corporate entity or legal person submitting the filing."@en .
+
+reg:Disclosure a owl:Class ;
+    rdfs:label "Disclosure"@en ;
+    rdfs:comment "A specific reporting of financial facts, risk factors, or corporate events."@en .
+
+reg:Regulator a owl:Class ;
+    rdfs:label "Regulator"@en ;
+    rdfs:comment "The supervisory or enforcement authority receiving the filing."@en .
+
+reg:Obligation a owl:Class ;
+    rdfs:label "Obligation"@en ;
+    rdfs:comment "A legal, statutory, or listing rule mandating the disclosure."@en .
+
+# ── Object properties ────────────────────────────────────────────────────────
+
+reg:filedBy a owl:ObjectProperty ;
+    rdfs:label "filed by"@en ;
+    rdfs:domain reg:Filing ;
+    rdfs:range reg:Issuer ;
+    rdfs:comment "The corporate entity (Issuer) that submitted the Filing."@en .
+
+reg:filedWith a owl:ObjectProperty ;
+    rdfs:label "filed with"@en ;
+    rdfs:domain reg:Filing ;
+    rdfs:range reg:Regulator ;
+    rdfs:comment "The Regulator with whom the Filing was submitted."@en .
+
+reg:containsDisclosure a owl:ObjectProperty ;
+    rdfs:label "contains disclosure"@en ;
+    rdfs:domain reg:Filing ;
+    rdfs:range reg:Disclosure ;
+    rdfs:comment "The specific Disclosure or report contained in the Filing."@en .
+
+reg:triggersObligation a owl:ObjectProperty ;
+    rdfs:label "triggers obligation"@en ;
+    rdfs:domain reg:Disclosure ;
+    rdfs:range reg:Obligation ;
+    rdfs:comment "The statutory or regulatory Obligation that mandated this Disclosure."@en .
+
+# ── Datatype properties ──────────────────────────────────────────────────────
+
+reg:filingDate a owl:DatatypeProperty ;
+    rdfs:label "filing date"@en ;
+    rdfs:domain reg:Filing ;
+    rdfs:range xsd:string ;
+    rdfs:comment "The calendar date the filing was made (e.g. 2026-05-15)."@en .
+
+reg:tickerSymbol a owl:DatatypeProperty ;
+    rdfs:label "ticker symbol"@en ;
+    rdfs:domain reg:Issuer ;
+    rdfs:range xsd:string ;
+    rdfs:comment "The stock exchange ticker symbol of the Issuer."@en .

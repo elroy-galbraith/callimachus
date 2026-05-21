@@ -163,8 +163,6 @@ def _run_nl_ask(
     Emits one ``progress`` event per stage so the SSE drawer can render a
     live trace. The terminal result is the full ``NLAnswerOut`` dict.
     """
-    import anthropic
-
     model = body.model or project.pack.models.ask
     job.set_status("running")
     try:
@@ -184,15 +182,13 @@ def _run_nl_ask(
             else "(no schema TTL)"
         )
 
-        client = anthropic.Anthropic()
-
         job.emit(
             "info",
             f"Synthesising SPARQL via {model}…",
             {"stage": "synthesise", "model": model},
         )
         sparql, rationale = ask_engine.synthesize_sparql(
-            client, model, body.question, schema_text, catalog, examples
+            model, body.question, schema_text, catalog, examples
         )
         job.emit(
             "info",
@@ -217,7 +213,7 @@ def _run_nl_ask(
 
         job.emit("info", f"Summarising via {model}…", {"stage": "summarise"})
         answer = ask_engine.summarise(
-            client, model, body.question, sparql, rationale, raw
+            model, body.question, sparql, rationale, raw
         )
 
         out = NLAnswerOut(

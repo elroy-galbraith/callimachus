@@ -12,9 +12,14 @@ license = { text = "MIT" }
 authors = [{ name = "Elroy Galbraith" }]
 
 # Engine-only dependencies. Enough to load packs, run extraction (with text
-# input or pdfplumber), build Turtle, run SPARQL, and call the Anthropic API.
+# input or pdfplumber), build Turtle, run SPARQL, and call any LLM provider
+# LiteLLM supports (Anthropic, OpenAI, Gemini, Mistral, Bedrock, …).
+#
+# litellm is pinned to an exact version because of the March 2026 PyPI
+# supply-chain attack (versions 1.82.7 and 1.82.8 shipped malicious code).
+# Bump deliberately after reviewing the release notes — never use a range.
 dependencies = [
-  "anthropic>=0.25.0",
+  "litellm==1.83.10",
   "PyYAML>=6.0",
   "pyoxigraph>=0.5.0",
   "python-dotenv>=1.0.0",

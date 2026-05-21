@@ -1,0 +1,73 @@
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix lit:  <https://ontology.example.org/literature/> .
+
+lit: a owl:Ontology ;
+    rdfs:label "Scholarly Literature Review"@en ;
+    rdfs:comment "A minimal ontology for literature reviews mapping papers, claims, studied entities, and methodologies."@en .
+
+# ── Classes ──────────────────────────────────────────────────────────────────
+
+lit:Paper a owl:Class ;
+    rdfs:label "Paper"@en ;
+    rdfs:comment "An academic publication, journal article, or preprint."@en .
+
+lit:Claim a owl:Class ;
+    rdfs:label "Claim"@en ;
+    rdfs:comment "A primary scientific assertion, finding, or hypothesis."@en .
+
+lit:Entity a owl:Class ;
+    rdfs:label "Entity"@en ;
+    rdfs:comment "A domain-specific concept, technology, or system studied."@en .
+
+lit:Methodology a owl:Class ;
+    rdfs:label "Methodology"@en ;
+    rdfs:comment "A research method, benchmark, or evaluation dataset."@en .
+
+# ── Object properties ────────────────────────────────────────────────────────
+
+lit:citesPaper a owl:ObjectProperty ;
+    rdfs:label "cites paper"@en ;
+    rdfs:comment "A paper or claim citing another Paper."@en ;
+    rdfs:range lit:Paper .
+
+lit:makesClaim a owl:ObjectProperty ;
+    rdfs:label "makes claim"@en ;
+    rdfs:domain lit:Paper ;
+    rdfs:range lit:Claim ;
+    rdfs:comment "A Paper presenting a core Claim."@en .
+
+lit:studiesEntity a owl:ObjectProperty ;
+    rdfs:label "studies entity"@en ;
+    rdfs:domain lit:Paper ;
+    rdfs:range lit:Entity ;
+    rdfs:comment "A Paper that evaluates or analyzes an Entity."@en .
+
+lit:usesMethodology a owl:ObjectProperty ;
+    rdfs:label "uses methodology"@en ;
+    rdfs:domain lit:Claim ;
+    rdfs:range lit:Methodology ;
+    rdfs:comment "A Claim or finding derived using a Methodology."@en .
+
+lit:supportsClaim a owl:ObjectProperty ;
+    rdfs:label "supports claim"@en ;
+    rdfs:domain lit:Claim ;
+    rdfs:range lit:Claim ;
+    rdfs:comment "A Claim supporting or corroborating another Claim."@en .
+
+# ── Datatype properties ──────────────────────────────────────────────────────
+
+lit:publishedYear a owl:DatatypeProperty ;
+    rdfs:label "published year"@en ;
+    rdfs:domain lit:Paper ;
+    rdfs:range xsd:integer ;
+    rdfs:comment "The calendar year of publication (e.g. 2026)."@en .
+
+lit:authorList a owl:DatatypeProperty ;
+    rdfs:label "author list"@en ;
+    rdfs:domain lit:Paper ;
+    rdfs:range xsd:string ;
+    rdfs:comment "Comma-separated list of authors."@en .

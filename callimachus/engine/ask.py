@@ -11,8 +11,6 @@ import json
 import sys
 from textwrap import dedent
 
-import anthropic
-
 try:
     import pyoxigraph
 except ImportError as _exc:
@@ -21,6 +19,7 @@ except ImportError as _exc:
         "Install with: pip install pyoxigraph"
     ) from _exc
 
+from callimachus.engine import llm
 from callimachus.pack import DomainPack
 
 
@@ -60,7 +59,6 @@ def few_shot_examples(pack: DomainPack) -> str:
 
 
 def synthesize_sparql(
-    client: anthropic.Anthropic,
     model: str,
     question: str,
     schema: str,
@@ -101,42 +99,35 @@ def synthesize_sparql(
 
         Use the `submit_sparql` tool to return your query and a one-sentence rationale.
     """)
-    resp = client.messages.create(
+    result = llm.call_with_tool(
         model=model,
-        max_tokens=1024,
         system=system,
-        tools=[
-            {
-                "name": "submit_sparql",
-                "description": "Submit the final SPARQL query that answers the question.",
-                "input_schema": {
-                    "type": "object",
-                    "properties": {
-                        "sparql": {
-                            "type": "string",
-                            "description": "Complete SPARQL query, including PREFIX lines.",
-                        },
-                        "rationale": {
-                            "type": "string",
-                            "description": "One sentence explaining how the query answers the question.",
-                        },
-                    },
-                    "required": ["sparql", "rationale"],
-                    "additionalProperties": False,
+        user=user,
+        tool_name="submit_sparql",
+        tool_description="Submit the final SPARQL query that answers the question.",
+        tool_schema={
+            "type": "object",
+            "properties": {
+                "sparql": {
+                    "type": "string",
+                    "description": "Complete SPARQL query, including PREFIX lines.",
                 },
-            }
-        ],
-        tool_choice={"type": "tool", "name": "submit_sparql"},
-        messages=[{"role": "user", "content": user}],
+                "rationale": {
+                    "type": "string",
+                    "description": "One sentence explaining how the query answers the question.",
+                },
+            },
+            "required": ["sparql", "rationale"],
+            "additionalProperties": False,
+        },
+        max_tokens=1024,
     )
-    for block in resp.content:
-        if block.type == "tool_use":
-            return block.input["sparql"], block.input["rationale"]
+    if "sparql" in result.arguments and "rationale" in result.arguments:
+        return result.arguments["sparql"], result.arguments["rationale"]
     raise RuntimeError("model did not return a SPARQL query")
 
 
 def summarise(
-    client: anthropic.Anthropic,
     model: str,
     question: str,
     sparql: str,
@@ -165,13 +156,12 @@ def summarise(
 
         Answer the question.
     """)
-    resp = client.messages.create(
+    return llm.chat_text(
         model=model,
-        max_tokens=600,
         system=system,
-        messages=[{"role": "user", "content": user}],
+        user=user,
+        max_tokens=600,
     )
-    return "".join(b.text for b in resp.content if b.type == "text").strip()
 
 
 def run_sparql(store: "pyoxigraph.Store", sparql: str) -> dict:

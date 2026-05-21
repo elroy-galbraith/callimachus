@@ -49,6 +49,24 @@ Open <http://localhost:5173>. Pick a shipped project (`compliance` or
 `thematic`), drop a document into the inbox, click **Process**, and review
 the proposed entities.
 
+Before you process anything, set at least one provider API key in `.env`
+at the repo root, e.g.:
+
+```dotenv
+ANTHROPIC_API_KEY=sk-ant-…
+# or any of:
+OPENAI_API_KEY=…
+GEMINI_API_KEY=…
+MISTRAL_API_KEY=…
+COHERE_API_KEY=…
+TOGETHER_API_KEY=…
+```
+
+The **Settings** page shows which provider keys the API process can see,
+and the **Schema** page has a per-project model picker so different
+projects can target different vendors. See *LLM provider support* below
+for details.
+
 For a CLI-only run (no web UI):
 
 ```powershell
@@ -87,7 +105,7 @@ flowchart LR
     end
 
     subgraph engine["callimachus.engine"]
-        extractor["extractor\n(Docling → Claude)"]
+        extractor["extractor\n(Docling → LLM via LiteLLM)"]
         chunker["chunker"]
         consolidator["consolidator\n(LLM proposals)"]
         applier["proposal_applier"]
@@ -149,6 +167,40 @@ callimachus/
 ├── docs/                     # Demo script, outreach materials, related work
 └── pyproject.toml
 ```
+
+---
+
+## LLM provider support
+
+Callimachus calls LLMs through [LiteLLM](https://github.com/BerriAI/litellm),
+so any provider that exposes tool / function calling works — Anthropic
+Claude, OpenAI GPT, Google Gemini, Mistral, Cohere, Together-hosted
+Llama, AWS Bedrock, Azure OpenAI, and more. Model ids follow
+LiteLLM's `<provider>/<model>` convention:
+
+```yaml
+# in pack.yaml
+models:
+  extractor: anthropic/claude-haiku-4-5-20251001
+  ask:       openai/gpt-4o
+# or gemini/gemini-2.5-pro, mistral/mistral-large-latest, …
+```
+
+Per-project model selection is editable in the UI: open **Schema →
+Models** and pick from a curated dropdown (or paste any LiteLLM id).
+Edits write back to the project's `pack.yaml`. Built-in packs
+(`builtin/compliance`, `builtin/thematic`) are read-only — recreate the
+project from the template to materialise an editable copy.
+
+The Settings page shows which provider keys the API process has
+visibility on. Add as many as you need to `.env`; LiteLLM picks the right
+one based on the model id's provider prefix.
+
+> **Note on the LiteLLM dependency:** the package is pinned to an exact
+> version in `pyproject.toml` (no `>=` range). This is deliberate
+> hardening against the March 2026 PyPI supply-chain incident that
+> shipped malicious `litellm` 1.82.7/1.82.8 releases. Bump deliberately
+> after reviewing upstream release notes.
 
 ---
 

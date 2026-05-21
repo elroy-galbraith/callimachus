@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Accordion,
   Alert,
@@ -21,11 +21,20 @@ import {
   TextInput,
   Title,
 } from "@mantine/core";
+import { notifications } from "@mantine/notifications";
 
-import { useToolSchema, useRenderPrompt, useProjectPack } from "../api/hooks";
-import { ApiError } from "../api/client";
+import {
+  useToolSchema,
+  useRenderPrompt,
+  useProjectPack,
+  useSettings,
+  useUpdatePackModels,
+} from "../api/hooks";
+import { extractErrorDetail } from "../api/client";
 import { CodeBlock } from "../components/CodeBlock";
+import { ModelPicker } from "../components/ModelPicker";
 import { useActiveProject } from "../state/useActiveProject";
+import type { DomainPackOut } from "../api/types";
 
 export function SchemaPage() {
   const { projectName } = useActiveProject();
@@ -183,6 +192,10 @@ export function SchemaPage() {
         )}
       </Section>
 
+      <Section title="Models">
+        <ModelsEditor pack={pack} />
+      </Section>
+
       <Section title="Prompt template">
         <Text size="sm" c="dimmed" mb="sm">
           Version <Code>{pack.prompt.version}</Code>{" "}
@@ -195,8 +208,8 @@ export function SchemaPage() {
 
       <Section title="Generated tool-use schema">
         <Text size="sm" c="dimmed" mb="sm">
-          What gets sent to Claude as the <Code>extract_entities</Code> tool's
-          <Code>input_schema</Code>.
+          What gets sent to the LLM as the <Code>extract_entities</Code> tool's
+          parameters (LiteLLM normalises this for each provider).
         </Text>
         {toolSchema ? (
           <CodeBlock maxHeight={420}>
@@ -229,6 +242,88 @@ function NamespaceItem({ label, value }: { label: string; value: string }) {
       </Text>
       <Code>{value}</Code>
     </Box>
+  );
+}
+
+function ModelsEditor({ pack }: { pack: DomainPackOut }) {
+  const { projectName } = useActiveProject();
+  const { data: settings } = useSettings();
+  const update = useUpdatePackModels(projectName);
+
+  const [extractor, setExtractor] = useState(pack.extractor_model);
+  const [ask, setAsk] = useState(pack.ask_model);
+
+  // Re-sync when the underlying pack reloads (e.g. after another tab
+  // saves, or the user switches projects).
+  useEffect(() => {
+    setExtractor(pack.extractor_model);
+    setAsk(pack.ask_model);
+  }, [pack.extractor_model, pack.ask_model]);
+
+  const dirty = extractor !== pack.extractor_model || ask !== pack.ask_model;
+  const errorBody = update.error ? extractErrorDetail(update.error) : null;
+
+  return (
+    <Stack>
+      <Text size="sm" c="dimmed">
+        Pick any LiteLLM model id (<Code>provider/model</Code>). The suggestion
+        list is just a starting point — anything LiteLLM supports works.
+      </Text>
+      <SimpleGrid cols={{ base: 1, md: 2 }}>
+        <ModelPicker
+          label="Extractor model"
+          description="Runs on every PDF/text chunk to emit structured entities."
+          value={extractor}
+          onChange={setExtractor}
+          providers={settings?.providers}
+          disabled={update.isPending}
+        />
+        <ModelPicker
+          label="Ask / consolidator model"
+          description="Drives natural-language SPARQL synthesis and proposal consolidation."
+          value={ask}
+          onChange={setAsk}
+          providers={settings?.providers}
+          disabled={update.isPending}
+        />
+      </SimpleGrid>
+      {errorBody && (
+        <Alert color="red" title="Could not save models">
+          {errorBody}
+        </Alert>
+      )}
+      <Group>
+        <Button
+          loading={update.isPending}
+          disabled={!dirty}
+          onClick={() =>
+            update.mutate(
+              { extractor, ask },
+              {
+                onSuccess: () =>
+                  notifications.show({
+                    title: "Models updated",
+                    message: "pack.yaml saved; new runs will use the selected models.",
+                    color: "green",
+                  }),
+              },
+            )
+          }
+        >
+          Save
+        </Button>
+        <Button
+          variant="default"
+          disabled={!dirty || update.isPending}
+          onClick={() => {
+            setExtractor(pack.extractor_model);
+            setAsk(pack.ask_model);
+          }}
+        >
+          Reset
+        </Button>
+      </Group>
+    </Stack>
   );
 }
 
@@ -319,15 +414,7 @@ function PromptTabs({
           </Group>
           {render.error && (
             <Alert color="red" title="Render failed">
-              {render.error instanceof ApiError
-                ? typeof render.error.body === "object" &&
-                  render.error.body &&
-                  "detail" in render.error.body
-                  ? String(
-                      (render.error.body as { detail: unknown }).detail,
-                    )
-                  : String(render.error.body)
-                : (render.error as Error).message}
+              {extractErrorDetail(render.error)}
             </Alert>
           )}
           {render.data && (

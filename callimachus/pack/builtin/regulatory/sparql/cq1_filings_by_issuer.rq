@@ -1,0 +1,14 @@
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX reg:  <https://ontology.example.org/regulatory/>
+
+# CQ1 — Which Filings have been submitted by each Issuer?
+SELECT ?issuer ?ticker ?filing ?filingLabel ?date WHERE {
+    ?issuer a reg:Issuer ;
+            rdfs:label ?issuerLabel .
+    ?filing a reg:Filing ;
+            rdfs:label ?filingLabel ;
+            reg:filedBy ?issuer .
+    OPTIONAL { ?issuer reg:tickerSymbol ?ticker . }
+    OPTIONAL { ?filing reg:filingDate ?date . }
+}
+ORDER BY ?ticker ?date ?filingLabel

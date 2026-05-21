@@ -1,0 +1,17 @@
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX reg:  <https://ontology.example.org/regulatory/>
+
+# CQ2 — Which Disclosures are triggered by which regulatory Obligations?
+SELECT ?obligation ?obligationLabel ?disclosure ?disclosureLabel ?filing ?filingLabel WHERE {
+    ?obligation a reg:Obligation ;
+                rdfs:label ?obligationLabel .
+    ?disclosure a reg:Disclosure ;
+                rdfs:label ?disclosureLabel ;
+                reg:triggersObligation ?obligation .
+    OPTIONAL {
+        ?filing a reg:Filing ;
+                rdfs:label ?filingLabel ;
+                reg:containsDisclosure ?disclosure .
+    }
+}
+ORDER BY ?obligationLabel ?disclosureLabel

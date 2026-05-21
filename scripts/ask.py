@@ -27,8 +27,6 @@ try:
 except ImportError:
     pass
 
-import anthropic                           # noqa: E402
-
 from callimachus.engine import ask as engine   # noqa: E402
 from callimachus.engine import store as store_engine  # noqa: E402
 from callimachus.pack import load_builtin      # noqa: E402
@@ -49,7 +47,9 @@ def main() -> None:
     parser.add_argument("--pack", default="compliance",
                         help="Built-in pack name (default: compliance).")
     parser.add_argument("--model", default=None,
-                        help="Anthropic model (default: pack.models.ask).")
+                        help="LiteLLM model id, e.g. anthropic/claude-sonnet-4-6, "
+                             "openai/gpt-4o, gemini/gemini-2.5-pro "
+                             "(default: pack.models.ask).")
     args = parser.parse_args()
 
     pack = load_builtin(args.pack)
@@ -70,12 +70,11 @@ def main() -> None:
     schema = SCHEMA_TTL.read_text(encoding="utf-8")
     catalog = engine.entity_catalog(store, pack)
     examples = engine.few_shot_examples(pack)
-    client = anthropic.Anthropic()
 
     print(f"[ask] question: {question}")
     print(f"[ask] synthesising SPARQL with {model} ...")
     sparql, rationale = engine.synthesize_sparql(
-        client, model, question, schema, catalog, examples
+        model, question, schema, catalog, examples
     )
 
     if args.show_sparql:
@@ -97,7 +96,7 @@ def main() -> None:
         engine.print_results(results)
 
     print(f"[ask] summarising with {model} ...")
-    answer = engine.summarise(client, model, question, sparql, rationale, results)
+    answer = engine.summarise(model, question, sparql, rationale, results)
 
     print("\n" + "=" * 60)
     print("ANSWER")

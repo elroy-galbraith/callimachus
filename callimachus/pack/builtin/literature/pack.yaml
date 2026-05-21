@@ -1,0 +1,124 @@
+# Scholarly Literature Review — domain pack.
+#
+# Maps papers, claims, studied entities, and experimental methodologies.
+
+schema_version: 1
+
+metadata:
+  name: literature
+  label: "Scholarly Literature Review"
+  description: >
+    Scholarly papers, preprints, core claims/findings, studied entities,
+    and methodologies extracted from academic publications.
+  version: "0.1.0"
+  author: "Elroy Galbraith"
+
+namespaces:
+  base_iri:      "https://ontology.example.org/literature/"
+  entity_iri:    "https://ontology.example.org/literature/entity/"
+  prefix:        "lit"
+  entity_prefix: "lite"
+
+classes:
+  - {name: Paper,       label: "Paper",       description: "An academic publication, journal article, or preprint."}
+  - {name: Claim,       label: "Claim",       description: "A primary scientific assertion, finding, or hypothesis."}
+  - {name: Entity,      label: "Entity",      description: "A domain-specific concept, technology, or system studied."}
+  - {name: Methodology, label: "Methodology", description: "A research method, benchmark, or evaluation dataset."}
+
+properties:
+  - {name: citesPaper,     domain: null,  range: Paper,       prompt_hint: "A paper or claim citing another Paper."}
+  - {name: makesClaim,     domain: Paper, range: Claim,       prompt_hint: "A Paper presenting a core Claim."}
+  - {name: studiesEntity,  domain: Paper, range: Entity,      prompt_hint: "A Paper that evaluates or analyzes an Entity."}
+  - {name: usesMethodology, domain: Claim, range: Methodology, prompt_hint: "A Claim or finding derived using a Methodology."}
+  - {name: supportsClaim,  domain: Claim, range: Claim,       prompt_hint: "A Claim supporting or corroborating another Claim."}
+  - {name: publishedYear,  domain: Paper, range: "xsd:integer", datatype: true, prompt_hint: "The calendar year of publication (e.g. 2026)."}
+  - {name: authorList,     domain: Paper, range: "xsd:string",  datatype: true, prompt_hint: "Comma-separated list of authors (e.g. Galbraith, E., Smith, J.)."}
+
+prompt:
+  version: literature-v1
+  text_window_chars: 10000
+  max_output_tokens: 8192
+  few_shot: |
+    EXAMPLE INPUT (verbatim paragraph from a scholarly paper):
+    In this study, we present Callimachus (Galbraith, 2026), an end-to-end platform for constructing typed knowledge graphs from raw document corpora. To evaluate its query execution performance, we ran a series of complex SPARQL benchmarks using Oxigraph as the underlying triple store. Our experimental results demonstrate that query response times are improved by 45% compared to legacy in-memory semantic stores.
+
+    EXAMPLE OUTPUT:
+    {
+      "entities": [
+        {
+          "class": "Paper",
+          "id": "galbraith2026_paper",
+          "label": "Callimachus: An End-to-End Platform for Typed Knowledge Graphs",
+          "source_section": "Introduction",
+          "source_text": "In this study, we present Callimachus (Galbraith, 2026), an end-to-end platform for constructing typed knowledge graphs from raw document corpora.",
+          "properties": {
+            "publishedYear": "2026",
+            "authorList": "Galbraith, E."
+          }
+        },
+        {
+          "class": "Entity",
+          "id": "galbraith2026_entity_callimachus",
+          "label": "Callimachus Platform",
+          "source_section": "Introduction",
+          "source_text": "In this study, we present Callimachus (Galbraith, 2026), an end-to-end platform for constructing typed knowledge graphs from raw document corpora.",
+          "properties": {}
+        },
+        {
+          "class": "Methodology",
+          "id": "galbraith2026_method_oxigraph",
+          "label": "Oxigraph Triple Store",
+          "source_section": "Evaluation",
+          "source_text": "we ran a series of complex SPARQL benchmarks using Oxigraph as the underlying triple store.",
+          "properties": {}
+        },
+        {
+          "class": "Claim",
+          "id": "galbraith2026_claim_query_improvement",
+          "label": "Query response times improved by 45%",
+          "source_section": "Evaluation / Results",
+          "source_text": "Our experimental results demonstrate that query response times are improved by 45% compared to legacy in-memory semantic stores.",
+          "properties": {
+            "usesMethodology": "galbraith2026_method_oxigraph"
+          }
+        }
+      ]
+    }
+    ---
+  system: |
+    You are a scholarly research assistant performing literature reviews and
+    knowledge extraction on academic papers and preprints. Extract entities
+    using only these classes:
+    Paper, Claim, Entity, Methodology.
+
+    Rules:
+      - Each entity MUST have a snake_case ID prefixed with the document ID ({doc_id}_).
+      - For each Paper, try to extract its publishedYear and authorList if available in the text.
+      - Associate Claims with their supporting Methodology or related Papers via properties.
+      - Be conservative: only extract entities and relationships explicitly supported by the text.
+  user: |2
+        {few_shot}
+        Document ID: {doc_id}
+        Prompt version: {prompt_version}
+
+        Extract all academic papers, claims, studied entities, and methodologies from the text below.
+        Use the extract_entities tool.
+
+        ---
+        {text_window}
+        ---
+
+competency_questions:
+  - {id: cq1, label: "Papers studying a specific concept", file: sparql/cq1_papers_per_concept.rq}
+  - {id: cq2, label: "Claims by methodology used",      file: sparql/cq2_claims_by_methodology.rq}
+  - {id: cq3, label: "Claims citing a specific paper",   file: sparql/cq3_claims_citing_paper.rq}
+
+hooks:
+  module: null
+
+models:
+  extractor: anthropic/claude-haiku-4-5-20251001
+  ask:       anthropic/claude-sonnet-4-6
+
+inbox:
+  accepted_extensions: [".pdf", ".txt", ".md"]

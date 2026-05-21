@@ -7,6 +7,75 @@ something visible to users or downstream packs changes.
 
 ---
 
+## 2026-05-21 — Model-agnostic: LiteLLM + per-project model picker
+
+Engine LLM calls now go through [LiteLLM](https://github.com/BerriAI/litellm),
+so any provider with tool/function-calling support is usable: Anthropic,
+OpenAI, Gemini, Mistral, Cohere, Together-hosted Llama, Bedrock, Azure
+OpenAI, etc. The `anthropic` SDK is no longer a hard dependency.
+
+### Added
+
+- `callimachus/engine/llm.py` — thin provider-agnostic wrapper exposing
+  `call_with_tool()` (forced function call → parsed dict) and
+  `chat_text()` (plain completion). Bare `claude-*` / `gpt-*` / `gemini-*`
+  model ids are auto-prefixed for back-compat with older packs.
+- `PATCH /api/projects/{name}/pack/models` — writes new
+  `models.extractor` / `models.ask` to the project's `pack.yaml`,
+  validating the result before persisting and reverting on failure.
+  Refuses to mutate built-in packs.
+- `GET /api/settings` now returns a `providers` array (one entry per
+  vendor with `env_var` + `configured` flag).
+- Schema page **Models** section — Autocomplete picker per role with a
+  curated dropdown plus free-form entry; live badge showing whether the
+  selected model's provider key is present in the environment.
+- Settings page **LLM provider keys** table — shows which providers the
+  API process can see.
+- `tests/api/test_smoke.py` assertions for the new settings shape and
+  the built-in pack guard.
+
+### Changed
+
+- `pyproject.toml` dependencies: replaced `anthropic>=0.25.0` with
+  `litellm==1.83.10` (exact pin — see below).
+- Built-in and project packs (`compliance`, `thematic`, `densho_themes`)
+  now use prefixed model ids (`anthropic/claude-haiku-4-5-20251001`,
+  etc.) in their `pack.yaml`.
+- `callimachus/engine/{extractor,consolidator,ask}.py` and
+  `callimachus/api/routers/query.py` — all five LLM call sites refactored
+  to use the new wrapper. No `import anthropic` left in engine code.
+
+### Security
+
+- `litellm` is pinned to an exact version (`==1.83.10`), not a range.
+  This is deliberate hardening against the March 2026 PyPI supply-chain
+  incident that shipped malicious `litellm` 1.82.7/1.82.8 releases —
+  `1.83.0` was the clean re-release and `1.83.10` rolls up the April
+  hardening pass. Bump deliberately after reviewing upstream release
+  notes; never use `>=`.
+
+### Verified
+
+- Gemini smoke-tested end-to-end against `gemini/gemini-2.5-flash`:
+  `chat_text`, forced `call_with_tool`, and a full
+  `extractor.call_llm` against the compliance pack all return the
+  expected shapes. Entities come back with `class`, `label`, `id`,
+  `source_section`, `source_text` — the same fields the vault writer
+  consumes from Anthropic output, no per-provider branching needed.
+- Smoke harness lives at `scripts/_smoke_gemini.py` (underscore-prefixed
+  so it doesn't appear in the CLI entry points). Reusable for
+  smoke-testing other providers — change `MODEL` at the top.
+
+### Hardened
+
+- `engine/llm.py` now tolerates empty `response.choices` from any
+  provider (Gemini occasionally returns this under safety filtering or
+  capacity pressure). `call_with_tool` returns an empty
+  `ToolCallResult` with `finish_reason="no_choices"` instead of an
+  `IndexError`; `chat_text` returns `""`.
+
+---
+
 ## 2026-05-20 — Platform pivot: renamed to Callimachus
 
 The repo started life as `carib-comp-ont` — a single-statute prototype

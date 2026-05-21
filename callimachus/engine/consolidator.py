@@ -17,9 +17,9 @@ from pathlib import Path
 from textwrap import dedent
 from typing import Any
 
-import anthropic
 import yaml
 
+from callimachus.engine import llm
 from callimachus.pack import DomainPack
 
 # Output budget for the propose_consolidation tool call. Vaults with many
@@ -200,43 +200,31 @@ def consolidate(
     if not entities:
         return []
 
-    client = anthropic.Anthropic()
     system = _render_system(pack)
     user = _USER_TEMPLATE.format(vault_json=json.dumps(entities, indent=2))
 
-    response = client.messages.create(
+    result = llm.call_with_tool(
         model=model or pack.models.ask,
-        max_tokens=CONSOLIDATOR_MAX_TOKENS,
         system=system,
-        tools=[
-            {
-                "name": "propose_consolidation",
-                "description": "Submit a list of proposed consolidations for human review.",
-                "input_schema": _proposal_schema(),
-            }
-        ],
-        tool_choice={"type": "tool", "name": "propose_consolidation"},
-        messages=[{"role": "user", "content": user}],
+        user=user,
+        tool_name="propose_consolidation",
+        tool_description="Submit a list of proposed consolidations for human review.",
+        tool_schema=_proposal_schema(),
+        max_tokens=CONSOLIDATOR_MAX_TOKENS,
     )
 
-    proposals: list[Proposal] = []
-    for block in response.content:
-        if block.type != "tool_use":
-            continue
-        raw_proposals = block.input.get("proposals", [])
-        if not raw_proposals and response.stop_reason == "max_tokens":
-            import sys
-            print(
-                f"[consolidator] WARNING: tool call truncated at "
-                f"max_tokens={CONSOLIDATOR_MAX_TOKENS} "
-                f"(stop_reason=max_tokens, output_tokens="
-                f"{response.usage.output_tokens}). Raise "
-                f"CONSOLIDATOR_MAX_TOKENS or split the vault.",
-                file=sys.stderr,
-            )
-        for raw in raw_proposals:
-            proposals.append(_to_proposal(raw))
-    return proposals
+    raw_proposals = result.arguments.get("proposals", [])
+    if not raw_proposals and result.finish_reason == "length":
+        import sys
+        print(
+            f"[consolidator] WARNING: tool call truncated at "
+            f"max_tokens={CONSOLIDATOR_MAX_TOKENS} "
+            f"(finish_reason=length, output_tokens="
+            f"{result.output_tokens}). Raise "
+            f"CONSOLIDATOR_MAX_TOKENS or split the vault.",
+            file=sys.stderr,
+        )
+    return [_to_proposal(raw) for raw in raw_proposals]
 
 
 def _to_proposal(raw: dict) -> Proposal:

@@ -94,10 +94,19 @@ class HooksSpec(BaseModel):
 
 
 class ModelsSpec(BaseModel):
+    """LLM model selection per role.
+
+    Values are LiteLLM model identifiers (``<provider>/<model>``), e.g.
+    ``anthropic/claude-sonnet-4-6``, ``openai/gpt-4o``,
+    ``gemini/gemini-2.5-pro``. Bare strings without a provider prefix are
+    auto-prefixed by ``callimachus.engine.llm.normalise_model_id`` for
+    back-compat with older packs that used Anthropic-only IDs like
+    ``claude-haiku-4-5-20251001``.
+    """
     model_config = ConfigDict(extra="forbid")
 
-    extractor: str = "claude-haiku-4-5-20251001"
-    ask: str = "claude-sonnet-4-6"
+    extractor: str = "anthropic/claude-haiku-4-5-20251001"
+    ask: str = "anthropic/claude-sonnet-4-6"
 
 
 class InboxSpec(BaseModel):

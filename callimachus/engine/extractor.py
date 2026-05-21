@@ -1,6 +1,6 @@
 """End-to-end extraction: PDF/text → LLM tool-use → vault Markdown files.
 
-Orchestrates pdf_text + chunker + schema_builder + prompt + Anthropic API
+Orchestrates pdf_text + chunker + schema_builder + prompt + LLM call
 + vault_writer. The script in scripts/extractor.py is now a CLI shim
 around this module.
 
@@ -15,10 +15,9 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-import anthropic
-
 from callimachus.engine import (
     chunker as chunker_mod,
+    llm,
     pdf_text,
     prompt as prompt_mod,
     schema_builder,
@@ -34,39 +33,30 @@ def call_llm(
     prompt_version: str,
 ) -> list[dict]:
     """Single-shot extraction call. Returns the raw `entities` list."""
-    client = anthropic.Anthropic()
     system, user = prompt_mod.render_prompts(pack, doc_id, prompt_version, text)
 
-    response = client.messages.create(
+    result = llm.call_with_tool(
         model=pack.models.extractor,
-        max_tokens=pack.prompt.max_output_tokens,
         system=system,
-        tools=[
-            {
-                "name": "extract_entities",
-                "description": "Extract ontology entities from the source text.",
-                "input_schema": schema_builder.build_entity_schema(pack),
-            }
-        ],
-        tool_choice={"type": "tool", "name": "extract_entities"},
-        messages=[{"role": "user", "content": user}],
+        user=user,
+        tool_name="extract_entities",
+        tool_description="Extract ontology entities from the source text.",
+        tool_schema=schema_builder.build_entity_schema(pack),
+        max_tokens=pack.prompt.max_output_tokens,
     )
 
-    for block in response.content:
-        if block.type == "tool_use":
-            entities = block.input.get("entities", [])
-            if not entities and response.stop_reason == "max_tokens":
-                print(
-                    f"[extractor] WARNING: tool call truncated at "
-                    f"max_tokens={pack.prompt.max_output_tokens} "
-                    f"(stop_reason=max_tokens, output_tokens="
-                    f"{response.usage.output_tokens}). Lower "
-                    f"text_window_chars or raise max_output_tokens "
-                    f"in pack.yaml.",
-                    file=sys.stderr,
-                )
-            return entities
-    return []
+    entities = result.arguments.get("entities", [])
+    if not entities and result.finish_reason == "length":
+        print(
+            f"[extractor] WARNING: tool call truncated at "
+            f"max_tokens={pack.prompt.max_output_tokens} "
+            f"(finish_reason=length, output_tokens="
+            f"{result.output_tokens}). Lower "
+            f"text_window_chars or raise max_output_tokens "
+            f"in pack.yaml.",
+            file=sys.stderr,
+        )
+    return entities
 
 
 def _enrich_source_section(entity: dict, chunk: chunker_mod.Chunk, total: int) -> None:

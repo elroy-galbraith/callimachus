@@ -1,0 +1,14 @@
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX lit:  <https://ontology.example.org/literature/>
+
+# CQ3 — Which Claims or Papers cite other Papers?
+SELECT ?claimOrPaper ?typeLabel ?citedPaper ?citedPaperLabel WHERE {
+    ?citedPaper a lit:Paper ;
+                rdfs:label ?citedPaperLabel .
+    ?claimOrPaper lit:citesPaper ?citedPaper ;
+                  a ?type .
+    OPTIONAL { ?claimOrPaper rdfs:label ?label . }
+    BIND(IF(BOUND(?label), ?label, ?claimOrPaper) AS ?claimOrPaperLabel)
+    BIND(REPLACE(STR(?type), "^.*[/#]", "") AS ?typeLabel)
+}
+ORDER BY ?citedPaperLabel ?claimOrPaperLabel

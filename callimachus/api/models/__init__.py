@@ -13,6 +13,7 @@ from callimachus.api.models.project import (
     EntityClassOut,
     EntityPropertyOut,
     CompetencyQuestionOut,
+    ModelsUpdateIn,
     PromptSpecOut,
     PackTemplateOut,
 )
@@ -52,7 +53,7 @@ from callimachus.api.models.schema import (
     PromptPreviewOut,
     ToolSchemaOut,
 )
-from callimachus.api.models.settings import SettingsOut
+from callimachus.api.models.settings import ProviderStatus, SettingsOut
 
 __all__ = [
     "ProjectSummary",
@@ -62,6 +63,7 @@ __all__ = [
     "EntityClassOut",
     "EntityPropertyOut",
     "CompetencyQuestionOut",
+    "ModelsUpdateIn",
     "PromptSpecOut",
     "PackTemplateOut",
     "JobStateOut",
@@ -91,5 +93,6 @@ __all__ = [
     "PromptPreviewIn",
     "PromptPreviewOut",
     "ToolSchemaOut",
+    "ProviderStatus",
     "SettingsOut",
 ]

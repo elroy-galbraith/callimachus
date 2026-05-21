@@ -1,0 +1,17 @@
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX reg:  <https://ontology.example.org/regulatory/>
+
+# CQ3 — Which corporate filing Obligations are monitored or enforced by each Regulator?
+#
+# Derived by matching Filings that were filedWith the Regulator and filedBy an Issuer,
+# where the Filing contains a Disclosure that triggers the Obligation.
+SELECT DISTINCT ?regulator ?regulatorLabel ?obligation ?obligationLabel WHERE {
+    ?regulator a reg:Regulator ;
+               rdfs:label ?regulatorLabel .
+    ?filing a reg:Filing ;
+            reg:filedWith ?regulator ;
+            reg:containsDisclosure ?disclosure .
+    ?disclosure reg:triggersObligation ?obligation .
+    ?obligation rdfs:label ?obligationLabel .
+}
+ORDER BY ?regulatorLabel ?obligationLabel

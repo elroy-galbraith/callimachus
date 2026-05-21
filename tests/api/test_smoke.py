@@ -40,6 +40,9 @@ def test_list_project_templates(client: TestClient) -> None:
     assert isinstance(templates, list)
     names = {t["name"] for t in templates}
     assert "compliance" in names
+    assert "literature" in names
+    assert "regulatory" in names
+
 
 
 def test_project_detail_compliance(client: TestClient) -> None:
@@ -75,6 +78,25 @@ def test_settings_shape(client: TestClient) -> None:
     assert isinstance(body["api_key_set"], bool)
     assert body["repo_root"]
     assert body["projects_dir"]
+    # Every shipped provider should appear with a boolean `configured`.
+    assert isinstance(body["providers"], list)
+    assert len(body["providers"]) >= 1
+    provider_ids = {p["id"] for p in body["providers"]}
+    assert {"anthropic", "openai", "gemini"}.issubset(provider_ids)
+    for p in body["providers"]:
+        assert isinstance(p["configured"], bool)
+        assert p["env_var"].endswith("_API_KEY")
+
+
+def test_update_pack_models_rejects_builtin(client: TestClient) -> None:
+    # The shipped `compliance` project uses the built-in pack; mutating
+    # it should return 400, not silently overwrite the package files.
+    r = client.patch(
+        "/api/projects/compliance/pack/models",
+        json={"extractor": "openai/gpt-4o-mini"},
+    )
+    assert r.status_code == 400
+    assert "built-in" in r.json()["detail"].lower()
 
 
 def test_cache_clear(client: TestClient) -> None:
@@ -109,8 +131,23 @@ def test_tool_schema_shape(client: TestClient) -> None:
     r = client.get("/api/projects/compliance/schema/tool-schema")
     assert r.status_code == 200
     body = r.json()
-    # Mirrors what extractor.call_llm passes to Anthropic as input_schema.
+    # Mirrors what extractor.call_llm passes to litellm as tool parameters.
     assert "schema" in body
     schema = body["schema"]
     assert schema["type"] == "object"
     assert "entities" in schema["properties"]
+
+
+def test_builtin_packs_validation() -> None:
+    from callimachus.pack import load_builtin
+    # Test that both new packs load successfully and validate against Pydantic models.
+    lit_pack = load_builtin("literature")
+    assert lit_pack.metadata.name == "literature"
+    assert "Paper" in lit_pack.class_names
+    assert "Claim" in lit_pack.class_names
+
+    reg_pack = load_builtin("regulatory")
+    assert reg_pack.metadata.name == "regulatory"
+    assert "Filing" in reg_pack.class_names
+    assert "Issuer" in reg_pack.class_names
+

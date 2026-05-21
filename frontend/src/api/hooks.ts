@@ -15,6 +15,7 @@ import type {
   InboxListOut,
   InboxUploadOut,
   JobStateOut,
+  ModelsUpdateIn,
   NLQueryIn,
   PackTemplate,
   PendingSubmissionOut,
@@ -103,6 +104,20 @@ export function useToolSchema(name: string | undefined) {
     queryFn: () => api.get<ToolSchemaOut>(`/projects/${name}/schema/tool-schema`),
     enabled: !!name,
     staleTime: 5 * 60_000,
+  });
+}
+
+export function useUpdatePackModels(name: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: ModelsUpdateIn) =>
+      api.patch<DomainPackOut>(`/projects/${name}/pack/models`, body),
+    onSuccess: () => {
+      if (name) {
+        qc.invalidateQueries({ queryKey: qk.projectPack(name) });
+        qc.invalidateQueries({ queryKey: qk.project(name) });
+      }
+    },
   });
 }
 
