@@ -28,18 +28,49 @@ vault unattended.
 
 ## Quickstart (≤ 5 minutes)
 
-```powershell
-# 1. Clone + install
+**1. Clone + install**
+
+```bash
 git clone https://github.com/elroy-galbraith/callimachus.git
 cd callimachus
 python -m venv .venv
-.venv\Scripts\activate
-pip install -e .[api]
+```
 
-# 2. Backend
+Activate the venv — pick your platform:
+
+```powershell
+# Windows (PowerShell)
+.venv\Scripts\activate
+```
+
+```bash
+# macOS / Linux (bash, zsh)
+source .venv/bin/activate
+```
+
+Then install. Quote the extras so zsh doesn't try to glob `[api]`:
+
+```bash
+pip install -e ".[api]"
+```
+
+**2. Run the backend + frontend**
+
+Easiest path — one command, both services, from the repo root:
+
+```bash
+cd frontend
+npm install        # first time only
+npm run dev:all    # starts uvicorn (:8000) and vite (:5173) together
+```
+
+Or run them manually in two terminals if you prefer:
+
+```bash
+# terminal 1 — backend
 uvicorn callimachus.api.main:app --reload --port 8000
 
-# 3. Frontend (in a second terminal)
+# terminal 2 — frontend
 cd frontend
 npm install
 npm run dev
@@ -69,8 +100,8 @@ for details.
 
 For a CLI-only run (no web UI):
 
-```powershell
-pip install -e .[curator]
+```bash
+pip install -e ".[curator]"
 python scripts/curator.py --once          # extract every PDF in inbox/
 python scripts/to_turtle.py               # vault → Turtle
 python scripts/ask.py "What's in the graph?" --show-sparql
@@ -206,7 +237,7 @@ one based on the model id's provider prefix.
 
 ## Demo
 
-```powershell
+```bash
 # Process the shipped Jamaica DPA 2020 PDF through the compliance pack
 python scripts/curator.py --once
 git log --oneline proposals/dpa_2020_s6        # PR-as-mutation lands here
