@@ -151,9 +151,10 @@ function UploadSection({ projectName }: { projectName: string }) {
           })
         }
         loading={upload.isPending}
-        // Server validates extensions against pack.inbox.accepted_extensions;
-        // the client just signals "any binary OK".
-        accept={["application/octet-stream"]}
+        // Server validates extensions against pack.inbox.accepted_extensions
+        // and returns rejects in `skipped`. No client-side MIME filtering —
+        // browsers disagree on the MIME for .vtt, .md, etc., which silently
+        // blocks otherwise-valid drops.
         multiple
       >
         <Group justify="center" gap="md" mih={120}>
