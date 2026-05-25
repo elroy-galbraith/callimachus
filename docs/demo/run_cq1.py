@@ -25,8 +25,8 @@ def main() -> None:
     print("-- CQ1: codes ranked by excerpt count --")
     print(f'{"label":35s} {"n":>3}')
     for row in store.query(CQ1.read_text(encoding="utf-8")):
-        label = str(row["label"]).strip('"').split('"')[0]
-        n = str(row["nExcerpts"]).split('"')[1]
+        label = row["label"].value
+        n = row["nExcerpts"].value
         print(f"{label:35s} {n:>3}")
 
 

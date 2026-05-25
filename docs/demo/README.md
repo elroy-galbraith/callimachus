@@ -21,7 +21,7 @@ start docs/demo/thematic.html
 import (`fcntl` missing), so use WSL:
 
 ```powershell
-wsl ~/.local/bin/asciinema play /mnt/c/Users/Heidi/OneDrive/Desktop/Projects/ontology/carib-comp-ont/.claude/worktrees/wonderful-booth-defb7b/docs/demo/thematic.cast
+wsl ~/.local/bin/asciinema play ./docs/demo/thematic.cast
 ```
 
 First time, install it in WSL: `wsl python3 -m pip install --user
