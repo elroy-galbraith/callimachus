@@ -74,6 +74,10 @@ export function ProposalMiniGraph({ dot }: { dot: string }) {
   // React-managed children: when the effect calls replaceChildren(svg) it
   // removes those children from the DOM behind React's back, and React's
   // next commit then throws "removeChild: not a child of this node".
+  // We hide the host while loading so it doesn't fight the Loader for
+  // flex space, and switch it to flex/center so the SVG stays centered
+  // (the rendered SVG carries max-width:100% but its natural width is
+  // typically narrower than the card).
   return (
     <div
       style={{
@@ -84,7 +88,14 @@ export function ProposalMiniGraph({ dot }: { dot: string }) {
       }}
     >
       {loading && <Loader size="xs" />}
-      <div ref={hostRef} style={{ width: "100%" }} />
+      <div
+        ref={hostRef}
+        style={{
+          width: "100%",
+          display: loading ? "none" : "flex",
+          justifyContent: "center",
+        }}
+      />
     </div>
   );
 }
