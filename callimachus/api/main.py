@@ -25,8 +25,26 @@ from callimachus.api.routers import (
 )
 from callimachus.api.store_cache import StoreCache
 
-# Load .env so engine modules see ANTHROPIC_API_KEY. Match the Streamlit
-# convention (no override) — values pre-set in the shell win over .env.
+# Load .env so engine modules see provider API keys. We deliberately do NOT
+# pass override=True so an intentional non-empty shell value still wins over
+# .env — but first scrub any provider key whose shell value is the empty
+# string. Windows shells (and Claude Code sessions) routinely inherit
+# ""-valued keys from a parent process, and python-dotenv treats "" as
+# "already set" and skips the .env entry, leaving the API blind to the real
+# key. Popping the empty entries before load_dotenv fixes that without
+# clobbering legitimate overrides.
+_PROVIDER_KEYS = {
+    "ANTHROPIC_API_KEY",
+    "GEMINI_API_KEY",
+    "OPENAI_API_KEY",
+    "MISTRAL_API_KEY",
+    "COHERE_API_KEY",
+    "TOGETHER_API_KEY",
+}
+for _k in list(os.environ):
+    if (_k in _PROVIDER_KEYS or _k.startswith("AWS_")) and os.environ[_k] == "":
+        del os.environ[_k]
+
 try:
     from dotenv import load_dotenv
 
