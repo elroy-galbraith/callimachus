@@ -41,11 +41,15 @@ curator = [
 # Layout-aware PDF text extraction (heavy; pulls PyTorch).
 docling = ["docling>=2.0.0"]
 # FastAPI HTTP layer (callimachus.api.*). Consumed by the React frontend.
+# Pulls watchdog because the inbox router calls into curator_engine, which
+# imports watchdog at module load even when the API only uses per-file
+# helpers (not the inbox-watching loop).
 api = [
   "fastapi>=0.110.0",
   "uvicorn[standard]>=0.27.0",
   "python-multipart>=0.0.9",
   "httpx>=0.27.0",  # required by fastapi.testclient
+  "watchdog>=4.0.0",
 ]
 # Legacy Streamlit UI — superseded by the React frontend (callimachus.api +
 # frontend/). Kept runnable at ``legacy-streamlit/callimachus_ui/`` for reference.
