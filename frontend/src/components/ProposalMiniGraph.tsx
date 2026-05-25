@@ -70,9 +70,12 @@ export function ProposalMiniGraph({ dot }: { dot: string }) {
       </Alert>
     );
   }
+  // The host div for the imperatively-inserted SVG must NOT contain any
+  // React-managed children: when the effect calls replaceChildren(svg) it
+  // removes those children from the DOM behind React's back, and React's
+  // next commit then throws "removeChild: not a child of this node".
   return (
     <div
-      ref={hostRef}
       style={{
         minHeight: 60,
         display: "flex",
@@ -81,6 +84,7 @@ export function ProposalMiniGraph({ dot }: { dot: string }) {
       }}
     >
       {loading && <Loader size="xs" />}
+      <div ref={hostRef} style={{ width: "100%" }} />
     </div>
   );
 }
