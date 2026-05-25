@@ -68,7 +68,14 @@ export function JobProgressDrawer<TResult = unknown>({
         qc.invalidateQueries({ queryKey: ["jobs", jobId] });
         onDone?.(status, []); // events are in state, not lifted up here
       },
-      onError: () => setTerminal("error"),
+      onError: () => {
+        setTerminal("error");
+        // SSE connection itself errored — we no longer know the job's
+        // server-side status. Refetch so the cache reflects whatever the
+        // REST snapshot reports instead of whatever the last progress
+        // event left behind.
+        qc.invalidateQueries({ queryKey: ["jobs", jobId] });
+      },
     });
     return () => unsub();
     // events / onDone are intentionally NOT in deps — we only want to
