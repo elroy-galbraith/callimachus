@@ -24,6 +24,7 @@ from callimachus.api.routers import (
     settings,
 )
 from callimachus.api.store_cache import StoreCache
+from callimachus.providers import PROVIDERS
 
 # Load .env so engine modules see provider API keys. We deliberately do NOT
 # pass override=True so an intentional non-empty shell value still wins over
@@ -32,17 +33,13 @@ from callimachus.api.store_cache import StoreCache
 # ""-valued keys from a parent process, and python-dotenv treats "" as
 # "already set" and skips the .env entry, leaving the API blind to the real
 # key. Popping the empty entries before load_dotenv fixes that without
-# clobbering legitimate overrides.
-_PROVIDER_KEYS = {
-    "ANTHROPIC_API_KEY",
-    "GEMINI_API_KEY",
-    "OPENAI_API_KEY",
-    "MISTRAL_API_KEY",
-    "COHERE_API_KEY",
-    "TOGETHER_API_KEY",
-}
+# clobbering legitimate overrides. The provider env-var list is derived
+# from PROVIDERS (single source of truth in callimachus.providers); AWS_*
+# is handled separately because Bedrock uses several env vars, not a
+# single one, so it doesn't fit the Provider.env_var model.
+_PROVIDER_ENV_VARS = {p.env_var for p in PROVIDERS}
 for _k in list(os.environ):
-    if (_k in _PROVIDER_KEYS or _k.startswith("AWS_")) and os.environ[_k] == "":
+    if (_k in _PROVIDER_ENV_VARS or _k.startswith("AWS_")) and os.environ[_k] == "":
         del os.environ[_k]
 
 try:
