@@ -13,6 +13,7 @@ import {
   IconCircleCheck,
   IconInfoCircle,
 } from "@tabler/icons-react";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { subscribeJob } from "../api/sse";
 import type { JobEvent } from "../api/types";
@@ -49,6 +50,7 @@ export function JobProgressDrawer<TResult = unknown>({
   const [events, setEvents] = useState<JobEvent[]>([]);
   const [terminal, setTerminal] = useState<"done" | "error" | null>(null);
   const [resultPayload, setResultPayload] = useState<TResult | null>(null);
+  const qc = useQueryClient();
 
   useEffect(() => {
     if (!jobId || !opened) return;
@@ -59,6 +61,11 @@ export function JobProgressDrawer<TResult = unknown>({
       onEvent: (e) => setEvents((prev) => [...prev, e]),
       onEnd: (status) => {
         setTerminal(status);
+        // SSE is the authoritative signal that the job is in a terminal
+        // state. Invalidate the matching ``useJob`` cache so consumers
+        // re-render with the final result without waiting on the polling
+        // fallback (which can race past the terminal status).
+        qc.invalidateQueries({ queryKey: ["jobs", jobId] });
         onDone?.(status, []); // events are in state, not lifted up here
       },
       onError: () => setTerminal("error"),
@@ -67,7 +74,7 @@ export function JobProgressDrawer<TResult = unknown>({
     // events / onDone are intentionally NOT in deps — we only want to
     // (re)subscribe on a fresh jobId, not on every render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [jobId, opened]);
+  }, [jobId, opened, qc]);
 
   return (
     <Drawer
