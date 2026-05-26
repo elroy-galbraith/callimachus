@@ -371,10 +371,12 @@ export function useVaultGraph(
       name && cqId
         ? qk.vaultGraph(name, cqId)
         : ["projects", "__none__", "graph", "__none__"],
-    queryFn: () =>
-      api.get<GraphDotOut>(
-        `/projects/${name}/graph?cq=${encodeURIComponent(cqId!)}`,
-      ),
+    queryFn: () => {
+      if (!name || !cqId) throw new Error("Project name and CQ id are required");
+      return api.get<GraphDotOut>(
+        `/projects/${name}/graph?cq=${encodeURIComponent(cqId)}`,
+      );
+    },
     enabled: !!name && !!cqId,
   });
 }
