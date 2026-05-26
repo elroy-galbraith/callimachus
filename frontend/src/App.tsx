@@ -9,6 +9,7 @@ import { QueryPage } from "./routes/QueryPage";
 import { ProposalsPage } from "./routes/ProposalsPage";
 import { SettingsPage } from "./routes/SettingsPage";
 import { VaultPage } from "./routes/VaultPage";
+import { GraphPage } from "./routes/GraphPage";
 import { HelpPage } from "./routes/HelpPage";
 
 export default function App() {
@@ -24,6 +25,7 @@ export default function App() {
           <Route path="schema" element={<SchemaPage />} />
           <Route path="query" element={<QueryPage />} />
           <Route path="vault" element={<VaultPage />} />
+          <Route path="graph" element={<GraphPage />} />
           <Route path="proposals" element={<ProposalsPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>

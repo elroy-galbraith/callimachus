@@ -11,6 +11,7 @@ import { api } from "./client";
 import type {
   CqRunResult,
   DomainPackOut,
+  GraphDotOut,
   InboxClearOut,
   InboxListOut,
   InboxUploadOut,
@@ -52,6 +53,8 @@ export const qk = {
     ["projects", name, "vault", "documents", docId] as const,
   vaultFile: (name: string, filename: string) =>
     ["projects", name, "vault", "files", filename] as const,
+  vaultGraph: (name: string, cqId: string) =>
+    ["projects", name, "graph", cqId] as const,
   templates: ["projects", "templates"] as const,
   settings: ["settings"] as const,
 };
@@ -356,6 +359,23 @@ export function useVaultFile(
         `/projects/${name}/vault/files/${encodeURIComponent(filename!)}`,
       ),
     enabled: !!name && !!filename,
+  });
+}
+
+export function useVaultGraph(
+  name: string | undefined,
+  cqId: string | undefined,
+) {
+  return useQuery({
+    queryKey:
+      name && cqId
+        ? qk.vaultGraph(name, cqId)
+        : ["projects", "__none__", "graph", "__none__"],
+    queryFn: () =>
+      api.get<GraphDotOut>(
+        `/projects/${name}/graph?cq=${encodeURIComponent(cqId!)}`,
+      ),
+    enabled: !!name && !!cqId,
   });
 }
 
