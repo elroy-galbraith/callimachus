@@ -54,6 +54,12 @@ from callimachus.api.models.schema import (
     ToolSchemaOut,
 )
 from callimachus.api.models.settings import ProviderStatus, SettingsOut
+from callimachus.api.models.vault import (
+    VaultDocumentDetailOut,
+    VaultDocumentOut,
+    VaultFileOut,
+    VaultListOut,
+)
 
 __all__ = [
     "ProjectSummary",
@@ -95,4 +101,8 @@ __all__ = [
     "ToolSchemaOut",
     "ProviderStatus",
     "SettingsOut",
+    "VaultDocumentDetailOut",
+    "VaultDocumentOut",
+    "VaultFileOut",
+    "VaultListOut",
 ]

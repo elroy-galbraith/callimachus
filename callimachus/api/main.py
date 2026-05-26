@@ -22,6 +22,7 @@ from callimachus.api.routers import (
     query,
     schema,
     settings,
+    vault,
 )
 from callimachus.api.store_cache import StoreCache
 from callimachus.providers import PROVIDERS
@@ -96,6 +97,7 @@ def create_app() -> FastAPI:
         inbox.router,
         pending.router,
         proposals.router,
+        vault.router,
         settings.router,
         jobs.router,
     ):
