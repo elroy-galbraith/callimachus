@@ -154,3 +154,58 @@ def test_graph_404_when_vault_missing(tmp_path: Path, monkeypatch) -> None:
         r = c.get("/api/projects/graph_novault/graph?cq=cq1")
         assert r.status_code == 404
     api_deps.clear_project_cache()
+
+
+# ---------- _collect_entity_uris unit tests ----------------------------------
+
+from callimachus.api.routers.graph import _collect_entity_uris
+
+
+def test_collect_entity_uris_extracts_iri_from_select() -> None:
+    raw = {
+        "kind": "select",
+        "rows": [{"?s": "<http://ex.org/Alice>", "?label": '"Alice"@en'}],
+    }
+    uris = _collect_entity_uris(raw)
+    assert uris == ["http://ex.org/Alice"]
+
+
+def test_collect_entity_uris_skips_typed_literals() -> None:
+    """Typed literals (e.g., COUNT result) must not become IRIs."""
+    raw = {
+        "kind": "select",
+        "rows": [
+            {
+                "?s": "<http://ex.org/Alice>",
+                "?count": '"3"^^<http://www.w3.org/2001/XMLSchema#integer>',
+            }
+        ],
+    }
+    uris = _collect_entity_uris(raw)
+    assert uris == ["http://ex.org/Alice"]
+
+
+def test_collect_entity_uris_graph_kind() -> None:
+    raw = {
+        "kind": "graph",
+        "triples": ["<http://ex.org/A> <http://ex.org/p> <http://ex.org/B> ."],
+    }
+    uris = _collect_entity_uris(raw)
+    assert "http://ex.org/A" in uris
+
+
+def test_collect_entity_uris_ask_kind_returns_empty() -> None:
+    raw = {"kind": "ask", "result": True}
+    assert _collect_entity_uris(raw) == []
+
+
+def test_collect_entity_uris_deduplicates() -> None:
+    raw = {
+        "kind": "select",
+        "rows": [
+            {"?s": "<http://ex.org/Alice>"},
+            {"?s": "<http://ex.org/Alice>"},
+        ],
+    }
+    uris = _collect_entity_uris(raw)
+    assert uris.count("http://ex.org/Alice") == 1

@@ -42,10 +42,11 @@ def _collect_entity_uris(raw: dict) -> list[str]:
                 if not val:
                     continue
                 uri = val.strip()
+                # Only accept angle-bracket-wrapped IRIs
                 if uri.startswith("<") and uri.endswith(">"):
                     uri = uri[1:-1]
-                if "://" in uri:
-                    uris.append(uri)
+                    if "://" in uri:
+                        uris.append(uri)
     elif raw["kind"] == "graph":
         for triple_str in raw["triples"]:
             m = _IRI_RE.match(triple_str.strip())
