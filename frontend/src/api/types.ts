@@ -260,6 +260,12 @@ export interface VaultFileOut {
   body: string;
 }
 
+// ---------- Graph viewer --------------------------------------------------
+
+export interface GraphDotOut {
+  dot: string;
+}
+
 export interface ProcessJobResult {
   processed: number;
   succeeded: number;
