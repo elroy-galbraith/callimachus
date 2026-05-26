@@ -39,6 +39,11 @@ export function GraphvizSvg({
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const onNodeClickRef = useRef(onNodeClick);
+  useEffect(() => {
+    onNodeClickRef.current = onNodeClick;
+  }, [onNodeClick]);
+
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
@@ -51,14 +56,14 @@ export function GraphvizSvg({
           svg.removeAttribute("width");
           svg.removeAttribute("height");
           svg.setAttribute("style", "max-width:100%; height:auto;");
-          if (onNodeClick) {
+          if (onNodeClickRef.current) {
             svg.querySelectorAll("g.node").forEach((g) => {
               const title = g.querySelector("title")?.textContent;
               if (!title) return;
               (g as SVGGElement).style.cursor = "pointer";
               g.addEventListener("click", (e) => {
                 e.stopPropagation();
-                onNodeClick(decodeURIComponent(title));
+                onNodeClickRef.current?.(decodeURIComponent(title));
               });
             });
           }
@@ -79,7 +84,7 @@ export function GraphvizSvg({
     return () => {
       cancelled = true;
     };
-  }, [dot, onNodeClick]);
+  }, [dot]);
 
   if (error) {
     return (

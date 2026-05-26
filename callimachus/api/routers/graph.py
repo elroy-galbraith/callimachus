@@ -36,22 +36,24 @@ def _get_store_cache(request: Request) -> StoreCache:
 def _collect_entity_uris(raw: dict) -> list[str]:
     """Pull entity IRIs out of a SELECT or GRAPH SPARQL result dict."""
     uris: list[str] = []
-    if raw["kind"] == "select":
-        for row in raw["rows"]:
+    kind = raw.get("kind")
+    if kind == "select":
+        for row in raw.get("rows", []):
             for val in row.values():
                 if not val:
                     continue
                 uri = val.strip()
-                # Only accept angle-bracket-wrapped IRIs
                 if uri.startswith("<") and uri.endswith(">"):
                     uri = uri[1:-1]
-                    if "://" in uri:
+                    if "://" in uri and ">" not in uri and not any(c.isspace() for c in uri):
                         uris.append(uri)
-    elif raw["kind"] == "graph":
-        for triple_str in raw["triples"]:
+    elif kind == "graph":
+        for triple_str in raw.get("triples", []):
             m = _IRI_RE.match(triple_str.strip())
             if m:
-                uris.append(m.group(1))
+                uri = m.group(1)
+                if ">" not in uri and not any(c.isspace() for c in uri):
+                    uris.append(uri)
     return list(dict.fromkeys(uris))  # deduplicate, preserve order
 
 

@@ -262,14 +262,14 @@ def triples_to_dot(
         cls = node_types.get(iri, "")
         color = class_colors.get(cls, "#e9ecef")
         nid = _node_id(iri)
-        safe_label = label.replace('"', "'")
+        safe_label = label.replace("\\", "\\\\").replace('"', '\\"')
         lines.append(
             f'  "{nid}" [label="{safe_label}" fillcolor="{color}" tooltip="{nid}"];'
         )
     for subj, pred_local, obj in edges:
         sid = _node_id(subj)
         oid = _node_id(obj)
-        safe_pred = pred_local.replace('"', "'")
+        safe_pred = pred_local.replace("\\", "\\\\").replace('"', '\\"')
         lines.append(f'  "{sid}" -> "{oid}" [label="{safe_pred}"];')
     lines.append("}")
     return "\n".join(lines)
