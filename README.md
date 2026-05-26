@@ -78,7 +78,8 @@ npm run dev
 
 Open <http://localhost:5173>. Pick a shipped project (`compliance` or
 `thematic`), drop a document into the inbox, click **Process**, and review
-the proposed entities.
+the proposed entities. The **Vault** page lets you browse all approved
+entities and their properties without leaving the UI.
 
 Before you process anything, set at least one provider API key in `.env`
 at the repo root, e.g.:
@@ -121,6 +122,8 @@ Add a new project by either:
 
 1. **Reusing a built-in pack** — `python -m callimachus.project create <name> --template compliance`, or
 2. **Writing your own pack** — copy `callimachus/pack/builtin/thematic/` as a starting point, edit `pack.yaml`'s classes/properties/prompts/CQs, point a project at it.
+
+Built-in packs: `compliance` (data-protection law), `thematic` (qualitative coding), `literature` (scholarly papers → claims/entities), `regulatory` (corporate filings → issuers/disclosures/obligations).
 
 A pack is just a YAML file plus optional SPARQL `.rq` files and a Python
 `hooks.py`. Schema changes don't require code changes.
@@ -185,7 +188,7 @@ progress to the React frontend via Server-Sent Events.
 ```
 callimachus/
 ├── callimachus/              # Python package
-│   ├── api/                  # FastAPI service (8 routers, 18 routes)
+│   ├── api/                  # FastAPI service (9 routers, 30 routes)
 │   ├── engine/               # Sync engine: extractor, curator, ask, consolidator…
 │   ├── project/              # Project = pack + paths + approval backend
 │   ├── pack/                 # DomainPack model + loader + builtins
@@ -194,7 +197,7 @@ callimachus/
 ├── projects/                 # Active projects (compliance, thematic, densho_themes…)
 ├── scripts/                  # CLI entry points (callimachus-extract, -ask, etc.)
 ├── legacy-streamlit/         # Original Streamlit UI; archived, still runnable
-├── tests/api/                # FastAPI smoke tests (31 tests)
+├── tests/api/                # FastAPI smoke tests (50 tests)
 ├── docs/                     # Demo script, outreach materials, related work
 └── pyproject.toml
 ```
