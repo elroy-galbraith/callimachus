@@ -225,6 +225,8 @@ def triples_to_dot(
     edges: list[tuple[str, str, str]] = []  # (subj_iri, pred_local, obj_iri)
 
     for triple_str in triples:
+        if not triple_str.lstrip().startswith("<"):
+            continue
         iris = _IRI_IN_TRIPLE_RE.findall(triple_str)
         if len(iris) < 2:
             continue
@@ -235,7 +237,7 @@ def triples_to_dot(
             m = _LITERAL_IN_TRIPLE_RE.search(triple_str)
             if m:
                 node_labels[subj_iri] = m.group(1)
-        elif len(iris) >= 3:
+        elif len(iris) >= 3 and not _LITERAL_IN_TRIPLE_RE.search(triple_str):
             edges.append((subj_iri, _local_name(pred_iri), iris[2]))
 
     all_iris = (

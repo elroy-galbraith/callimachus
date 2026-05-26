@@ -66,6 +66,26 @@ def test_triples_to_dot_vault_filename_as_node_id(tmp_path: Path) -> None:
     assert "personal_data_e0.md" in dot
 
 
+def test_triples_to_dot_typed_literal_skipped() -> None:
+    """Typed-literal data properties (e.g., age^^xsd:integer) must not produce edges."""
+    triples = [
+        '<http://ex.org/Alice> <http://ex.org/age>'
+        ' "42"^^<http://www.w3.org/2001/XMLSchema#integer> .',
+    ]
+    dot = triples_to_dot(triples, pack_classes=[], vault_files=[])
+    assert "->" not in dot
+    assert "integer" not in dot
+
+
+def test_triples_to_dot_blank_node_subject_skipped() -> None:
+    """Triples with blank-node subjects must be silently skipped."""
+    triples = [
+        "_:b0 <http://ex.org/p> <http://ex.org/Y> .",
+    ]
+    dot = triples_to_dot(triples, pack_classes=[], vault_files=[])
+    assert "->" not in dot
+
+
 def test_all_vault_files_returns_md_files(tmp_path: Path, monkeypatch) -> None:
     import callimachus.api.deps as api_deps
     import callimachus.project.project as pm
