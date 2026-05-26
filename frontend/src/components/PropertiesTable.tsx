@@ -1,4 +1,12 @@
-import { Badge, Blockquote, Code, Group, Stack, Table, Text } from "@mantine/core";
+import {
+  Badge,
+  Blockquote,
+  Code,
+  Group,
+  Stack,
+  Table,
+  Text,
+} from "@mantine/core";
 
 export function PropertiesTable({
   frontmatter,

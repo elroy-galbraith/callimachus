@@ -14,6 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from callimachus.api.jobs import JobRegistry
 from callimachus.api.routers import (
+    graph,
     inbox,
     jobs,
     pending,
@@ -98,6 +99,7 @@ def create_app() -> FastAPI:
         pending.router,
         proposals.router,
         vault.router,
+        graph.router,
         settings.router,
         jobs.router,
     ):
