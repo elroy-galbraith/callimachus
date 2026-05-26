@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+from urllib.parse import quote as _url_quote
 
 from callimachus.api.models import EntityCardOut
 from callimachus.project import Project
@@ -24,6 +25,18 @@ _FRONTMATTER_RE = re.compile(r"^---\n(.*?)\n---\n", re.DOTALL)
 # so the stem without that suffix is a reasonable doc-id guess when the
 # frontmatter omits ``source_document``.
 _ENTITY_SUFFIX_RE = re.compile(r"_e\d+$")
+
+_IRI_IN_TRIPLE_RE = re.compile(r"<([^>]+)>")
+_LITERAL_IN_TRIPLE_RE = re.compile(r'"((?:[^"\\]|\\.)*)"')
+_NORMALIZE_RE = re.compile(r"[\s\-_]")
+
+_RDF_TYPE = "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"
+_RDFS_LABEL = "http://www.w3.org/2000/01/rdf-schema#label"
+
+_CLASS_COLORS = [
+    "#4c6ef5", "#f76707", "#2f9e44", "#e03131",
+    "#1098ad", "#d6336c", "#7048e8", "#f08c00",
+]
 
 
 def read_frontmatter(path: Path) -> dict[str, Any]:
@@ -162,3 +175,99 @@ def read_vault_file(project: Project, filename: str) -> dict[str, Any] | None:
         frontmatter = {}
         body = text
     return {"filename": candidate.name, "frontmatter": frontmatter, "body": body}
+
+
+def _normalize_for_lookup(s: str) -> str:
+    """Lowercase and strip spaces/hyphens/underscores for URI→filename matching."""
+    return _NORMALIZE_RE.sub("", s).lower()
+
+
+def _local_name(iri: str) -> str:
+    """Extract the local name from an IRI (after the last # or /)."""
+    return iri.rsplit("#", 1)[-1] if "#" in iri else iri.rsplit("/", 1)[-1]
+
+
+def all_vault_files(project: Project) -> list[Path]:
+    """All approved vault markdown files (top-level only; proposals subdir excluded)."""
+    if not project.vault_dir.exists():
+        return []
+    return sorted(project.vault_dir.glob("*.md"))
+
+
+def triples_to_dot(
+    triples: list[str],
+    pack_classes: list[str],
+    vault_files: list[Path],
+) -> str:
+    """Convert stringified RDF triples to a Graphviz DOT string.
+
+    DOT node IDs are URL-encoded vault filenames so the browser click
+    handler can call ``decodeURIComponent`` on the SVG ``<title>`` element
+    and pass the result straight to ``GET /vault/files/{filename}``.
+    """
+    # Build normalized-local-name → vault-filename lookup.
+    local_to_file: dict[str, str] = {}
+    for path in vault_files:
+        stem = _ENTITY_SUFFIX_RE.sub("", path.stem)
+        local_to_file[_normalize_for_lookup(stem)] = path.name
+        meta = read_frontmatter(path)
+        label_val = meta.get("label")
+        if isinstance(label_val, str) and label_val.strip():
+            local_to_file[_normalize_for_lookup(label_val.strip())] = path.name
+
+    class_colors: dict[str, str] = {
+        cls: _CLASS_COLORS[i % len(_CLASS_COLORS)]
+        for i, cls in enumerate(pack_classes)
+    }
+
+    node_labels: dict[str, str] = {}  # iri → display label
+    node_types: dict[str, str] = {}   # iri → class name
+    edges: list[tuple[str, str, str]] = []  # (subj_iri, pred_local, obj_iri)
+
+    for triple_str in triples:
+        iris = _IRI_IN_TRIPLE_RE.findall(triple_str)
+        if len(iris) < 2:
+            continue
+        subj_iri, pred_iri = iris[0], iris[1]
+        if pred_iri == _RDF_TYPE and len(iris) >= 3:
+            node_types[subj_iri] = _local_name(iris[2])
+        elif pred_iri == _RDFS_LABEL:
+            m = _LITERAL_IN_TRIPLE_RE.search(triple_str)
+            if m:
+                node_labels[subj_iri] = m.group(1)
+        elif len(iris) >= 3:
+            edges.append((subj_iri, _local_name(pred_iri), iris[2]))
+
+    all_iris = (
+        set(node_labels)
+        | set(node_types)
+        | {s for s, _, _ in edges}
+        | {o for _, _, o in edges}
+    )
+
+    def _node_id(iri: str) -> str:
+        local = _local_name(iri)
+        filename = local_to_file.get(_normalize_for_lookup(local), f"{local}.md")
+        return _url_quote(filename, safe="")
+
+    lines = [
+        "digraph vault {",
+        "  rankdir=LR;",
+        '  node [shape=box style=filled fontsize=11 fontname="Helvetica"];',
+    ]
+    for iri in sorted(all_iris):
+        label = node_labels.get(iri, _local_name(iri))
+        cls = node_types.get(iri, "")
+        color = class_colors.get(cls, "#e9ecef")
+        nid = _node_id(iri)
+        safe_label = label.replace('"', "'")
+        lines.append(
+            f'  "{nid}" [label="{safe_label}" fillcolor="{color}" tooltip="{nid}"];'
+        )
+    for subj, pred_local, obj in edges:
+        sid = _node_id(subj)
+        oid = _node_id(obj)
+        safe_pred = pred_local.replace('"', "'")
+        lines.append(f'  "{sid}" -> "{oid}" [label="{safe_pred}"];')
+    lines.append("}")
+    return "\n".join(lines)
