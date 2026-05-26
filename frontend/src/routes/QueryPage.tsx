@@ -15,7 +15,6 @@ import {
   Tabs,
   Text,
   Textarea,
-  TextInput,
   Title,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
@@ -41,9 +40,12 @@ import {
 } from "../api/hooks";
 import { CodeBlock } from "../components/CodeBlock";
 import { JobProgressDrawer } from "../components/JobProgressDrawer";
+import { SELECT_DATA } from "../components/ModelPicker";
 import { SparqlResultsTable } from "../components/SparqlResultsTable";
 import { useActiveProject } from "../state/useActiveProject";
 import type { NLAnswerOut } from "../api/types";
+
+const MODEL_SELECT_DATA = [{ value: "", label: "Use project default" }, ...SELECT_DATA];
 
 export function QueryPage() {
   const { projectName, data: project } = useActiveProject();
@@ -279,11 +281,14 @@ function AskTab({
       />
       <Grid>
         <Grid.Col span={{ base: 12, md: 9 }}>
-          <TextInput
+          <Select
             label="Model"
-            description="Anthropic model id (overrides pack.models.ask)"
+            description="Overrides the project's ask model for this query."
+            data={MODEL_SELECT_DATA}
             value={model}
-            onChange={(e) => setModel(e.currentTarget.value)}
+            onChange={(v) => setModel(v ?? "")}
+            searchable
+            comboboxProps={{ shadow: "md" }}
           />
         </Grid.Col>
         <Grid.Col span={{ base: 12, md: 3 }} display="flex" style={{ alignItems: "flex-end" }}>
