@@ -17,6 +17,7 @@ import {
   IconLayoutGrid,
   IconLayoutSidebar,
   IconListSearch,
+  IconNetwork,
   IconSchema,
   IconSettings,
 } from "@tabler/icons-react";
@@ -29,6 +30,7 @@ const NAV: { label: string; to: string; icon: React.ReactNode }[] = [
   { label: "Dashboard", to: "dashboard", icon: <IconLayoutGrid size={16} /> },
   { label: "Schema", to: "schema", icon: <IconSchema size={16} /> },
   { label: "Vault", to: "vault", icon: <IconLayoutSidebar size={16} /> },
+  { label: "Graph", to: "graph", icon: <IconNetwork size={16} /> },
   { label: "Query", to: "query", icon: <IconListSearch size={16} /> },
   { label: "Proposals", to: "proposals", icon: <IconChartDots3 size={16} /> },
   { label: "Settings", to: "settings", icon: <IconSettings size={16} /> },
