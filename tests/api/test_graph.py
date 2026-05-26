@@ -104,3 +104,53 @@ def test_all_vault_files_returns_md_files(tmp_path: Path, monkeypatch) -> None:
     assert len(files) == 2
     assert all(f.suffix == ".md" for f in files)
     api_deps.clear_project_cache()
+
+
+# ---------- HTTP endpoint tests -----------------------------------------------
+
+from fastapi.testclient import TestClient
+
+from callimachus.api.main import create_app
+
+
+@pytest.fixture(scope="module")
+def graph_client():
+    with TestClient(create_app()) as c:
+        r = c.post("/api/projects/compliance/query/rebuild-ttl")
+        assert r.status_code == 200, r.text
+        yield c
+
+
+def test_graph_returns_dot_for_valid_cq(graph_client: TestClient) -> None:
+    r = graph_client.get("/api/projects/compliance/graph?cq=cq1")
+    assert r.status_code == 200
+    body = r.json()
+    assert "dot" in body
+    assert "digraph" in body["dot"]
+
+
+def test_graph_404_for_unknown_cq(graph_client: TestClient) -> None:
+    r = graph_client.get("/api/projects/compliance/graph?cq=nope")
+    assert r.status_code == 404
+
+
+def test_graph_404_when_vault_missing(tmp_path: Path, monkeypatch) -> None:
+    import shutil
+
+    import callimachus.api.deps as api_deps
+    import callimachus.project.project as pm
+    from callimachus.project import create_from_template
+
+    projects_root = tmp_path / "projects"
+    projects_root.mkdir()
+    monkeypatch.setattr(pm, "projects_dir", lambda: projects_root)
+    api_deps.clear_project_cache()
+    project = create_from_template("graph_novault", template="thematic", backend="filesystem")
+    # Remove vault_dir so ensure_vault_ttl raises FileNotFoundError → 404
+    if project.vault_dir.exists():
+        shutil.rmtree(project.vault_dir)
+
+    with TestClient(create_app()) as c:
+        r = c.get("/api/projects/graph_novault/graph?cq=cq1")
+        assert r.status_code == 404
+    api_deps.clear_project_cache()

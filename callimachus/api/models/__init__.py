@@ -60,6 +60,7 @@ from callimachus.api.models.vault import (
     VaultFileOut,
     VaultListOut,
 )
+from callimachus.api.models.graph import GraphDotOut
 
 __all__ = [
     "ProjectSummary",
@@ -105,4 +106,5 @@ __all__ = [
     "VaultDocumentOut",
     "VaultFileOut",
     "VaultListOut",
+    "GraphDotOut",
 ]
