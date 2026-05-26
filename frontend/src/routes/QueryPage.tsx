@@ -40,18 +40,12 @@ import {
 } from "../api/hooks";
 import { CodeBlock } from "../components/CodeBlock";
 import { JobProgressDrawer } from "../components/JobProgressDrawer";
+import { SELECT_DATA } from "../components/ModelPicker";
 import { SparqlResultsTable } from "../components/SparqlResultsTable";
-import { MODEL_CATALOG } from "../models/catalog";
 import { useActiveProject } from "../state/useActiveProject";
 import type { NLAnswerOut } from "../api/types";
 
-const MODEL_SELECT_DATA = [
-  { value: "", label: "Use project default" },
-  ...MODEL_CATALOG.map((m) => ({
-    value: m.id,
-    label: m.notes ? `${m.label}  —  ${m.notes}` : m.label,
-  })),
-];
+const MODEL_SELECT_DATA = [{ value: "", label: "Use project default" }, ...SELECT_DATA];
 
 export function QueryPage() {
   const { projectName, data: project } = useActiveProject();

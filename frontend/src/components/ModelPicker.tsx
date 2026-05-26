@@ -34,12 +34,23 @@ function buildSelectData() {
       label: m.notes ? `${m.label}  —  ${m.notes}` : m.label,
     });
   }
-  return GROUP_ORDER
+  const data = GROUP_ORDER
     .filter(({ provider }) => byProvider[provider])
     .map(({ provider, label }) => ({ group: label, items: byProvider[provider] }));
+
+  // Append any providers added to the catalog that aren't yet in GROUP_ORDER,
+  // so they're visible rather than silently dropped.
+  const ordered = new Set(GROUP_ORDER.map((g) => g.provider));
+  for (const provider of Object.keys(byProvider)) {
+    if (!ordered.has(provider)) {
+      const label = provider.charAt(0).toUpperCase() + provider.slice(1);
+      data.push({ group: label, items: byProvider[provider] });
+    }
+  }
+  return data;
 }
 
-const SELECT_DATA = buildSelectData();
+export const SELECT_DATA = buildSelectData();
 
 /**
  * Dropdown (searchable Select) of curated LiteLLM model ids, grouped by
