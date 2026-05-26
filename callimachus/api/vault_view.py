@@ -27,7 +27,13 @@ _ENTITY_SUFFIX_RE = re.compile(r"_e\d+$")
 
 
 def read_frontmatter(path: Path) -> dict[str, Any]:
-    """Return YAML frontmatter as a dict (empty dict on any failure)."""
+    """Return YAML frontmatter as a dict (empty dict on any failure).
+
+    The dict guarantee matters: a vault file whose frontmatter parses to a
+    list or scalar (hand-edited, malformed) would otherwise let
+    ``.get(...)`` calls in callers raise ``AttributeError``. Always coerce
+    non-mapping payloads to ``{}`` so the type signature does not lie.
+    """
     try:
         text = path.read_text(encoding="utf-8")
     except OSError:
@@ -36,9 +42,10 @@ def read_frontmatter(path: Path) -> dict[str, Any]:
     if not m:
         return {}
     try:
-        return yaml.safe_load(m.group(1)) or {}
+        parsed = yaml.safe_load(m.group(1))
     except yaml.YAMLError:
         return {}
+    return parsed if isinstance(parsed, dict) else {}
 
 
 def vault_files_for(project: Project, doc_id: str) -> list[Path]:
@@ -146,9 +153,10 @@ def read_vault_file(project: Project, filename: str) -> dict[str, Any] | None:
     m = _FRONTMATTER_RE.match(text)
     if m:
         try:
-            frontmatter = yaml.safe_load(m.group(1)) or {}
+            parsed = yaml.safe_load(m.group(1))
         except yaml.YAMLError:
-            frontmatter = {}
+            parsed = None
+        frontmatter = parsed if isinstance(parsed, dict) else {}
         body = text[m.end():]
     else:
         frontmatter = {}

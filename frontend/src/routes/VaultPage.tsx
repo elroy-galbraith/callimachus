@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Alert,
   Badge,
@@ -47,6 +47,16 @@ export function VaultPage() {
   const { projectName } = useActiveProject();
   const [selectedDocId, setSelectedDocId] = useState<string | null>(null);
   const [selectedFilename, setSelectedFilename] = useState<string | null>(null);
+
+  // React Router reuses this component when the URL switches between
+  // ``/projects/A/vault`` and ``/projects/B/vault`` (same route, different
+  // param), so without this reset the stale selection from project A
+  // would be requested against B and return 404. Mostly hit via
+  // browser back/forward; the in-app nav goes through the projects index.
+  useEffect(() => {
+    setSelectedDocId(null);
+    setSelectedFilename(null);
+  }, [projectName]);
 
   return (
     <Stack>

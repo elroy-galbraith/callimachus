@@ -149,3 +149,45 @@ def test_vault_file_rejects_traversal(client: TestClient) -> None:
 def test_vault_file_404_for_missing(client: TestClient) -> None:
     r = client.get("/api/projects/test_vault/vault/files/nope_e0.md")
     assert r.status_code == 404
+
+
+def test_vault_handles_malformed_frontmatter(
+    client: TestClient, isolated_project
+) -> None:
+    """A vault file whose frontmatter parses to a non-mapping must not 500.
+
+    ``read_frontmatter`` and ``read_vault_file`` both coerce non-dict YAML
+    payloads to ``{}`` so a hand-edited or corrupt file degrades gracefully
+    instead of crashing the listing / detail / single-file endpoints.
+    """
+    project = isolated_project
+    project.vault_dir.mkdir(parents=True, exist_ok=True)
+    # YAML parses to a list, not a mapping
+    (project.vault_dir / "broken_e0.md").write_text(
+        "---\n- one\n- two\n---\nbody text\n", encoding="utf-8"
+    )
+    # YAML parses to a scalar
+    (project.vault_dir / "scalar_e0.md").write_text(
+        "---\njust-a-string\n---\nbody\n", encoding="utf-8"
+    )
+    # Well-formed file alongside so the list isn't all-broken
+    _write_entity(project, "good_e0.md", cls="Code", label="OK", source_document="good")
+
+    r = client.get("/api/projects/test_vault/vault")
+    assert r.status_code == 200
+    doc_ids = {d["doc_id"] for d in r.json()["documents"]}
+    # Broken files keep their stripped-stem fallback as doc_id
+    assert {"good", "broken", "scalar"}.issubset(doc_ids)
+
+    r = client.get("/api/projects/test_vault/vault/documents/broken")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["doc_id"] == "broken"
+    # source_document falls back to None when frontmatter wasn't a mapping
+    assert body["source_document"] is None
+
+    r = client.get("/api/projects/test_vault/vault/files/broken_e0.md")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["frontmatter"] == {}
+    assert "body text" in body["body"]
