@@ -235,6 +235,31 @@ export interface PendingSubmissionOut {
   entities: EntityCardOut[];
 }
 
+// ---------- Vault browser -------------------------------------------------
+
+export interface VaultDocumentOut {
+  doc_id: string;
+  source_document: string | null;
+  entity_count: number;
+  classes: string[];
+}
+
+export interface VaultListOut {
+  documents: VaultDocumentOut[];
+}
+
+export interface VaultDocumentDetailOut {
+  doc_id: string;
+  source_document: string | null;
+  entities: EntityCardOut[];
+}
+
+export interface VaultFileOut {
+  filename: string;
+  frontmatter: Record<string, unknown>;
+  body: string;
+}
+
 export interface ProcessJobResult {
   processed: number;
   succeeded: number;

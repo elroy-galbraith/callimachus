@@ -31,6 +31,9 @@ import type {
   SparqlQueryIn,
   SparqlResultOut,
   ToolSchemaOut,
+  VaultDocumentDetailOut,
+  VaultFileOut,
+  VaultListOut,
   VaultTtlOut,
 } from "./types";
 
@@ -44,6 +47,11 @@ export const qk = {
   inbox: (name: string) => ["projects", name, "inbox"] as const,
   pending: (name: string) => ["projects", name, "pending"] as const,
   proposals: (name: string) => ["projects", name, "proposals"] as const,
+  vault: (name: string) => ["projects", name, "vault"] as const,
+  vaultDoc: (name: string, docId: string) =>
+    ["projects", name, "vault", "documents", docId] as const,
+  vaultFile: (name: string, filename: string) =>
+    ["projects", name, "vault", "files", filename] as const,
   templates: ["projects", "templates"] as const,
   settings: ["settings"] as const,
 };
@@ -304,6 +312,50 @@ export function useKickApply(name: string | undefined) {
   return useMutation({
     mutationFn: () =>
       api.post<{ job_id: string }>(`/projects/${name}/proposals/apply`),
+  });
+}
+
+// ---------- Vault browser ---------------------------------------------------
+
+export function useVaultDocuments(name: string | undefined) {
+  return useQuery({
+    queryKey: name ? qk.vault(name) : ["projects", "__none__", "vault"],
+    queryFn: () => api.get<VaultListOut>(`/projects/${name}/vault`),
+    enabled: !!name,
+  });
+}
+
+export function useVaultDocument(
+  name: string | undefined,
+  docId: string | undefined,
+) {
+  return useQuery({
+    queryKey:
+      name && docId
+        ? qk.vaultDoc(name, docId)
+        : ["projects", "__none__", "vault", "documents", "__none__"],
+    queryFn: () =>
+      api.get<VaultDocumentDetailOut>(
+        `/projects/${name}/vault/documents/${docId}`,
+      ),
+    enabled: !!name && !!docId,
+  });
+}
+
+export function useVaultFile(
+  name: string | undefined,
+  filename: string | undefined,
+) {
+  return useQuery({
+    queryKey:
+      name && filename
+        ? qk.vaultFile(name, filename)
+        : ["projects", "__none__", "vault", "files", "__none__"],
+    queryFn: () =>
+      api.get<VaultFileOut>(
+        `/projects/${name}/vault/files/${encodeURIComponent(filename!)}`,
+      ),
+    enabled: !!name && !!filename,
   });
 }
 
